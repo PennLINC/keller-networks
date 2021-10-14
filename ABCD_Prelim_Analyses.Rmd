@@ -1,0 +1,151 @@
+---
+title: "ABCD_Prelim_Analyses"
+output: html_document
+---
+
+# Load data
+```{r cars}
+var_exp <- read.csv("/Users/ariellekeller/Documents/Kellernet_PrelimAnalysis/variance_exp_by_subj.csv")
+nihtb<-read.table("/Users/ariellekeller/Documents/Kellernet_PrelimAnalysis/NihTB/abcd_tbss01.txt",header=TRUE)
+nihtb.baseline<-nihtb[nihtb$eventname=="baseline_year_1_arm_1",]
+merged.data1 <- merge(var_exp,nihtb.baseline,by="subjectkey")
+lmt<-read.table("/Users/ariellekeller/Documents/Kellernet_PrelimAnalysis/Thomp/lmtp201.txt",header=TRUE)
+lmt.baseline<-lmt[lmt$eventname=="baseline_year_1_arm_1",]
+merged.data2 <- merge(merged.data1,lmt.baseline[, c("subjectkey", setdiff(colnames(lmt.baseline),colnames(merged.data1)))],by="subjectkey")
+ravlt<-read.table("/Users/ariellekeller/Documents/Kellernet_PrelimAnalysis/Thomp/abcd_ps01.txt",header=TRUE)
+ravlt.baseline<-ravlt[ravlt$eventname=="baseline_year_1_arm_1",]
+merged.data3 <- merge(merged.data2,ravlt.baseline[, c("subjectkey", setdiff(colnames(ravlt.baseline),colnames(merged.data2)))],by="subjectkey")
+trauma<-read.table("/Users/ariellekeller/Documents/Kellernet_PrelimAnalysis/Strife/abcd_ptsd01.txt",header=TRUE)
+trauma.baseline<-trauma[trauma$eventname=="baseline_year_1_arm_1",]
+combined.data <- merge(merged.data3,trauma.baseline[, c("subjectkey", setdiff(colnames(trauma.baseline),colnames(merged.data3)))],by="subjectkey")
+```
+
+
+# Coerce data types
+```{r}
+combined.data$nihtbx_flanker_uncorrected <- as.numeric(combined.data$nihtbx_flanker_uncorrected)
+combined.data$nihtbx_picvocab_uncorrected <- as.numeric(combined.data$nihtbx_picvocab_uncorrected)
+combined.data$nihtbx_list_uncorrected <- as.numeric(combined.data$nihtbx_list_uncorrected)
+combined.data$nihtbx_pattern_uncorrected <- as.numeric(combined.data$nihtbx_pattern_uncorrected)
+combined.data$nihtbx_cardsort_uncorrected <- as.numeric(combined.data$nihtbx_cardsort_uncorrected)
+combined.data$nihtbx_picture_uncorrected <- as.numeric(combined.data$nihtbx_picture_uncorrected)
+combined.data$nihtbx_reading_uncorrected <- as.numeric(combined.data$nihtbx_reading_uncorrected)
+combined.data$lmt_scr_perc_correct <- as.numeric(combined.data$lmt_scr_perc_correct)
+combined.data$pea_ravlt_sd_trial_i_tc <- as.numeric(combined.data$pea_ravlt_sd_trial_i_tc)
+combined.data$pea_ravlt_sd_trial_ii_tc <- as.numeric(combined.data$pea_ravlt_sd_trial_ii_tc)
+combined.data$pea_ravlt_sd_trial_iii_tc <- as.numeric(combined.data$pea_ravlt_sd_trial_iii_tc)
+combined.data$pea_ravlt_sd_trial_iv_tc <- as.numeric(combined.data$pea_ravlt_sd_trial_iv_tc)
+combined.data$pea_ravlt_sd_trial_v_tc <- as.numeric(combined.data$pea_ravlt_sd_trial_v_tc)
+combined.data$interview_age <- as.numeric(combined.data$interview_age)
+
+ind_pea_ravlt = c(which(names(combined.data)=="pea_ravlt_sd_trial_i_tc"),which(names(combined.data)=="pea_ravlt_sd_trial_ii_tc"),
+	which(names(combined.data)=="pea_ravlt_sd_trial_iii_tc"),which(names(combined.data)=="pea_ravlt_sd_trial_iv_tc"),
+	which(names(combined.data)=="pea_ravlt_sd_trial_v_tc")); names(combined.data)[ind_pea_ravlt]; summary(combined.data[,ind_pea_ravlt])
+combined.data$pea_ravlt_ld = apply(combined.data[,ind_pea_ravlt],1,sum)
+
+combined.data$pea_ravlt_ld <- as.numeric(combined.data$pea_ravlt_ld)
+
+# Rename according to Thompson 2018 code
+names(combined.data)[which(names(combined.data)=="nihtbx_picvocab_uncorrected")] = "PicVocab"
+names(combined.data)[which(names(combined.data)=="nihtbx_flanker_uncorrected")] = "Flanker"
+names(combined.data)[which(names(combined.data)=="nihtbx_list_uncorrected")] = "List"
+names(combined.data)[which(names(combined.data)=="nihtbx_cardsort_uncorrected")] = "CardSort"
+names(combined.data)[which(names(combined.data)=="nihtbx_pattern_uncorrected")] = "Pattern"
+names(combined.data)[which(names(combined.data)=="nihtbx_picture_uncorrected")] = "Picture"
+names(combined.data)[which(names(combined.data)=="nihtbx_reading_uncorrected")] = "Reading"
+names(combined.data)[which(names(combined.data)=="pea_ravlt_ld")] = "RAVLT"
+names(combined.data)[which(names(combined.data)=="lmt_scr_perc_correct")] = "LMT"
+```
+
+
+# Calculate Thompson factor scores
+```{r}
+combined.data$thompson_PC1 <- (0.754*combined.data$PicVocab)+(0.213*combined.data$Flanker)+(0.471*combined.data$List)+(0.205*combined.data$CardSort)+(0.015*combined.data$Pattern)+(0.012*combined.data$Picture)+(0.82*combined.data$Reading)+(0.306*combined.data$RAVLT)+(0.5*combined.data$LMT)
+
+combined.data$thompson_PC2 <- (0.065*combined.data$PicVocab)+(0.712*combined.data$Flanker)+(0.148*combined.data$List)+(0.71*combined.data$CardSort)+(0.813*combined.data$Pattern)+(0.135*combined.data$Picture)+(0.12*combined.data$Reading)+(0.125*combined.data$RAVLT)+(0.299*combined.data$LMT)
+
+combined.data$thompson_PC3 <- (0.19*combined.data$PicVocab)+(0.067*combined.data$Flanker)+(0.493*combined.data$List)+(0.232*combined.data$CardSort)+(0.085*combined.data$Pattern)+(0.863*combined.data$Picture)+(0.122*combined.data$Reading)+(0.712*combined.data$RAVLT)+(0.068*combined.data$LMT)
+```
+
+
+# Compare variance explained to Thompson factor scores
+```{r}
+summary(lm(varexp~interview_age+sex+thompson_PC1+thompson_PC2+thompson_PC3,data=combined.data))
+model1<-lm(thompson_PC2~interview_age+sex,data=combined.data)
+model2<-lm(thompson_PC2~interview_age+sex+varexp,data=combined.data)
+anova(model1,model2,test = "Chisq")
+```
+
+
+# Compare variance explained to Trauma types
+```{r}
+combined.data[,225:241]<-as.numeric(unlist(combined.data[,225:241]))
+combined.data$ACEsTotal <- rowSums(combined.data[,c("ksads_ptsd_raw_754_p","ksads_ptsd_raw_755_p","ksads_ptsd_raw_756_p","ksads_ptsd_raw_757_p","ksads_ptsd_raw_758_p","ksads_ptsd_raw_759_p","ksads_ptsd_raw_760_p","ksads_ptsd_raw_761_p","ksads_ptsd_raw_762_p","ksads_ptsd_raw_763_p","ksads_ptsd_raw_764_p","ksads_ptsd_raw_765_p","ksads_ptsd_raw_766_p","ksads_ptsd_raw_767_p","ksads_ptsd_raw_768_p","ksads_ptsd_raw_769_p","ksads_ptsd_raw_770_p")])
+
+summary(lm(varexp~interview_age+sex+ksads_ptsd_raw_754_p+ksads_ptsd_raw_755_p+ksads_ptsd_raw_756_p+ksads_ptsd_raw_757_p+ksads_ptsd_raw_758_p+ksads_ptsd_raw_759_p+ksads_ptsd_raw_760_p+ksads_ptsd_raw_761_p+ksads_ptsd_raw_762_p+ksads_ptsd_raw_763_p+ksads_ptsd_raw_764_p+ksads_ptsd_raw_765_p+ksads_ptsd_raw_766_p+ksads_ptsd_raw_767_p+ksads_ptsd_raw_768_p+ksads_ptsd_raw_769_p+ksads_ptsd_raw_770_p,data=combined.data))
+
+
+# Trauma endorsements are sparse (yay) so will use lasso
+library(glmnet)
+set.seed(1)
+combined.data<-combined.data[complete.cases(combined.data$ACEsTotal),]
+combined.data<-combined.data[complete.cases(combined.data$thompson_PC2),]
+train=sample(seq(length(combined.data$subjectkey)),round((2/3)*length(combined.data$subjectkey)),replace=FALSE)
+lasso.tr=glmnet(as.matrix(combined.data[train,c("ksads_ptsd_raw_754_p","ksads_ptsd_raw_755_p","ksads_ptsd_raw_756_p","ksads_ptsd_raw_757_p","ksads_ptsd_raw_758_p","ksads_ptsd_raw_759_p","ksads_ptsd_raw_760_p","ksads_ptsd_raw_761_p","ksads_ptsd_raw_762_p","ksads_ptsd_raw_763_p","ksads_ptsd_raw_764_p","ksads_ptsd_raw_765_p","ksads_ptsd_raw_766_p","ksads_ptsd_raw_767_p","ksads_ptsd_raw_768_p","ksads_ptsd_raw_769_p","ksads_ptsd_raw_770_p")]),combined.data[train,"varexp"],family="gaussian")
+#lasso.tr
+pred=predict(lasso.tr,as.matrix(combined.data[-train,c("ksads_ptsd_raw_754_p","ksads_ptsd_raw_755_p","ksads_ptsd_raw_756_p","ksads_ptsd_raw_757_p","ksads_ptsd_raw_758_p","ksads_ptsd_raw_759_p","ksads_ptsd_raw_760_p","ksads_ptsd_raw_761_p","ksads_ptsd_raw_762_p","ksads_ptsd_raw_763_p","ksads_ptsd_raw_764_p","ksads_ptsd_raw_765_p","ksads_ptsd_raw_766_p","ksads_ptsd_raw_767_p","ksads_ptsd_raw_768_p","ksads_ptsd_raw_769_p","ksads_ptsd_raw_770_p")]))
+dim(pred)
+rmse=sqrt(apply((combined.data[-train,"varexp"]-pred)^2,2,mean))
+plot(log(lasso.tr$lambda),rmse,type="b",xlab="Log(lambda")
+lam.best=lasso.tr$lambda[order(rmse)[1]] # extracting the best lambda
+lam.best
+coef(lasso.tr,s=lam.best)
+
+summary(lm(varexp~interview_age+sex+ksads_ptsd_raw_755_p+ksads_ptsd_raw_756_p+ksads_ptsd_raw_757_p+ksads_ptsd_raw_758_p+ksads_ptsd_raw_762_p+ksads_ptsd_raw_763_p+ksads_ptsd_raw_764_p+ksads_ptsd_raw_766_p,data=combined.data))
+
+model1<-lm(varexp~interview_age+sex,data=combined.data)
+model2<-lm(varexp~interview_age+sex+ksads_ptsd_raw_755_p+ksads_ptsd_raw_756_p+ksads_ptsd_raw_757_p+ksads_ptsd_raw_758_p+ksads_ptsd_raw_762_p+ksads_ptsd_raw_763_p+ksads_ptsd_raw_764_p+ksads_ptsd_raw_766_p,data=combined.data)
+anova(model1,model2,test = "Chisq")
+
+```
+
+
+```{r}
+
+model1<-lm(varexp~interview_age+sex,data=combined.data)
+model2<-lm(varexp~interview_age+sex+thompson_PC2,data=combined.data)
+model3<-lm(varexp~interview_age+sex+thompson_PC2+interview_age*thompson_PC2,data=combined.data)
+anova(model1,model2,test = "Chisq")
+anova(model2,model3,test = "Chisq")
+
+model1<-lm(thompson_PC2~interview_age+sex,data=combined.data)
+model2<-lm(thompson_PC2~interview_age+sex+varexp,data=combined.data)
+model3<-lm(thompson_PC2~interview_age+sex+varexp+interview_age*varexp,data=combined.data)
+anova(model1,model2,test = "Chisq")
+anova(model2,model3,test = "Chisq")
+
+summary(lm(thompson_PC2~interview_age*sex*varexp,data=combined.data))
+```
+
+
+## Check for outliers (>3sd) on Thompson factor scores
+```{r}
+mean_PC1 <- mean(combined.data$thompson_PC1)
+mean_PC2 <- mean(combined.data$thompson_PC2)
+mean_PC3 <- mean(combined.data$thompson_PC3)
+sd3_PC1 <- sd(combined.data$thompson_PC1)*3
+sd3_PC2 <- sd(combined.data$thompson_PC2)*3
+sd3_PC3 <- sd(combined.data$thompson_PC3)*3
+
+sum(combined.data$thompson_PC1 > mean_PC1+sd3_PC1) # 3 outliers
+sum(combined.data$thompson_PC2 > mean_PC2+sd3_PC2) # 0 outliers
+sum(combined.data$thompson_PC3 > mean_PC3+sd3_PC3) # 2 outliers
+
+combined.data.noOutliers <- combined.data[(combined.data$thompson_PC1>(mean_PC1-sd3_PC1) & combined.data$thompson_PC1<(mean_PC1+sd3_PC1) & combined.data$thompson_PC2>(mean_PC2-sd3_PC2) & combined.data$thompson_PC2<(mean_PC2+sd3_PC2) & combined.data$thompson_PC3>(mean_PC3-sd3_PC3) & combined.data$thompson_PC3<(mean_PC3+sd3_PC3)),]
+
+summary(lm(thompson_PC2~interview_age*sex*varexp,data=combined.data.noOutliers))
+
+```
+
+
+
