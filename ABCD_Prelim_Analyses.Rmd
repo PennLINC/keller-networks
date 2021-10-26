@@ -58,6 +58,27 @@ names(combined.data)[which(names(combined.data)=="lmt_scr_perc_correct")] = "LMT
 ```
 
 
+# Inclusion/Exclusion
+```{r}
+# First, to harmonize our criteria with UMinn, retain participants with at least 8min of clean data instead of 12min. TR = 0.8s so 8min = 480s = 600TRs
+num_TRs <- read.csv("/Users/ariellekeller/Documents/Kellernet_PrelimAnalysis/num_TRs_by_subj_redo.csv")
+data<-merge(combined.data,num_TRs,by="subjectkey")
+data.clean<-data[data$numTRs>=600,]
+
+# Second, remove participants based on booleans from ABCD
+abcd_imgincl01 <- read.csv("/Users/ariellekeller/Documents/Kellernet_PrelimAnalysis/abcd_imgincl01.csv")
+abcd_imgincl01 <- abcd_imgincl01[abcd_imgincl01$eventnam=="baseline_year_1_arm_1",]
+abcd_imgincl01 <- abcd_imgincl01[!abcd_imgincl01$visit=="",]
+abcd_imgincl01 <- abcd_imgincl01[abcd_imgincl01$imgincl_t1w_include==1,]
+abcd_imgincl01 <- abcd_imgincl01[abcd_imgincl01$imgincl_rsfmri_include==1,]
+abcd_imgincl01 <- abcd_imgincl01[abcd_imgincl01$imgincl_mid_include==1,]
+abcd_imgincl01 <- abcd_imgincl01[abcd_imgincl01$imgincl_nback_include==1,]
+abcd_imgincl01 <- abcd_imgincl01[abcd_imgincl01$imgincl_sst_include==1,]
+
+combined.data <- merge(data.clean,abcd_imgincl01[, c("subjectkey",'imgincl_t1w_include')],by="subjectkey")
+```
+
+
 # Calculate Thompson factor scores
 ```{r}
 combined.data$thompson_PC1 <- (0.754*combined.data$PicVocab)+(0.213*combined.data$Flanker)+(0.471*combined.data$List)+(0.205*combined.data$CardSort)+(0.015*combined.data$Pattern)+(0.012*combined.data$Picture)+(0.82*combined.data$Reading)+(0.306*combined.data$RAVLT)+(0.5*combined.data$LMT)
