@@ -1,7 +1,20 @@
 ---
 title: "BHRC Preliminary Analyses"
-output: html_notebook
+output:
+  html_document:
+    df_print: paged
+  html_notebook: default
+  pdf_document: default
 ---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+options(width=250)
+library(tidyr)
+library(dplyr)
+library(ggplot2)
+library(lsr)
+```
 
 ## For these analyses, I'll look at how early life trauma (Threat and Deprivation factors) affects three metrics of performance on the Attention Network Task (ANT): Alerting, Orienting, and Conflict.
 
@@ -20,6 +33,7 @@ proposal.data.w0<-proposal.data[proposal.data$redcap_event_name=="wave0_arm_1",c
 
 combined.data2<-merge(proposal.data.w0,sle_factors,by="ident")
 all.data<-merge(combined.data1,combined.data2,by="SUBJECTID")
+all.data$gender<-as.factor(all.data$gender)
 ```
 
 
@@ -27,8 +41,8 @@ all.data<-merge(combined.data1,combined.data2,by="SUBJECTID")
 ```{r}
 set.seed(2021)
 test=sample(seq(1015),200,replace=FALSE)
-test.data<-all.data[test,]
-all.data<-all.data[-test,]
+test.data<-all.data[test,] # Test set (n=200)
+all.data<-all.data[-test,] # Training set (n=815)
 ```
 
 
@@ -59,25 +73,32 @@ all.data.ALERT <- all.data[(all.data$ALERT>(ALERT.mean-ALERT.3sd) & all.data$ALE
 all.data.ORIENT <- all.data[(all.data$ORIENT>(ORIENT.mean-ORIENT.3sd) & all.data$ORIENT<(ORIENT.mean+ORIENT.3sd)),]
 all.data.CONFLICT <- all.data[(all.data$CONFLICT>(CONFLICT.mean-CONFLICT.3sd) & all.data$CONFLICT<(CONFLICT.mean+CONFLICT.3sd)),]
 
+# This is a complete set with subjects who have all 3 measures within the bounds of 3SD
 all.data.complete.set <- all.data[(all.data$ALERT>(ALERT.mean-ALERT.3sd) & all.data$ALERT<(ALERT.mean+ALERT.3sd)) & (all.data$ORIENT>(ORIENT.mean-ORIENT.3sd) & all.data$ORIENT<(ORIENT.mean+ORIENT.3sd)) & (all.data$CONFLICT>(CONFLICT.mean-CONFLICT.3sd) & all.data$CONFLICT<(CONFLICT.mean+CONFLICT.3sd)),]
 ```
 
 
+### Threat and deprivation scores are correlated, so we'll test them in separate models
+```{r}
+cor.test(all.data.complete.set$threat,all.data.complete.set$depriv)
+```
+
+
+
 
 ### Run linear models using Threat and Deprivation scores to predict ANT performance metrics
+# Note: Gender 1 = Male, Gender 2 = Female
 ```{r}
-summary(lm(ALERT~age+gender+threat+depriv,data=all.data.ALERT))
-summary(lm(ORIENT~age+gender+threat+depriv,data=all.data.ORIENT))
-summary(lm(CONFLICT~age+gender+threat+depriv,data=all.data.CONFLICT))
+# Without interactions
+summary(lm(ALERT~age+gender+threat,data=all.data.ALERT))
+summary(lm(ORIENT~age+gender+threat,data=all.data.ORIENT))
+summary(lm(CONFLICT~age+gender+threat,data=all.data.CONFLICT))
 
-summary(lm(ALERT~age+gender+threat+depriv+age*threat+age*depriv+gender*threat+gender*depriv,data=all.data.ALERT)) # sig gender x threat
-summary(lm(ORIENT~age+gender+threat+depriv+age*threat+age*depriv+gender*threat+gender*depriv,data=all.data.ORIENT))
-summary(lm(CONFLICT~age+gender+threat+depriv+age*threat+age*depriv+gender*threat+gender*depriv,data=all.data.CONFLICT)) # close age x threat
+summary(lm(ALERT~age+gender+depriv,data=all.data.ALERT))
+summary(lm(ORIENT~age+gender+depriv,data=all.data.ORIENT))
+summary(lm(CONFLICT~age+gender+depriv,data=all.data.CONFLICT))
 
-summary(lm(ALERT~age+gender+threat+depriv+age*threat+age*depriv+gender*threat+gender*depriv+age*gender*threat+age*gender*depriv,data=all.data.ALERT))
-summary(lm(ORIENT~age+gender+threat+depriv+age*threat+age*depriv+gender*threat+gender*depriv+age*gender*threat+age*gender*depriv,data=all.data.ORIENT)) 
-summary(lm(CONFLICT~age+gender+threat+depriv+age*threat+age*depriv+gender*threat+gender*depriv+age*gender*threat+age*gender*depriv,data=all.data.CONFLICT))
-
+# With interactions
 summary(lm(ALERT~age+gender+depriv+depriv*age+depriv*gender,data=all.data.ALERT)) 
 summary(lm(ORIENT~age+gender+depriv+depriv*age+depriv*gender,data=all.data.ORIENT))
 summary(lm(CONFLICT~age+gender+depriv+depriv*age+depriv*gender,data=all.data.CONFLICT))
@@ -85,19 +106,28 @@ summary(lm(CONFLICT~age+gender+depriv+depriv*age+depriv*gender,data=all.data.CON
 summary(lm(ALERT~age+gender+threat+threat*age+threat*gender,data=all.data.ALERT)) # Close on gender x threat
 summary(lm(ORIENT~age+gender+threat+threat*age+threat*gender,data=all.data.ORIENT))
 summary(lm(CONFLICT~age+gender+threat+threat*age+threat*gender,data=all.data.CONFLICT))
+
+summary(lm(ALERT~age+threat,data=all.data.ALERT[all.data.ALERT$gender==1,]))
+summary(lm(ALERT~age+threat,data=all.data.ALERT[all.data.ALERT$gender==2,])) # significant just in girls
+
+# Including threat and deprivation together in the same model (just to see?)
+summary(lm(ALERT~age+gender+threat+depriv+age*threat+age*depriv+gender*threat+gender*depriv,data=all.data.ALERT)) # sig gender x threat
+summary(lm(ORIENT~age+gender+threat+depriv+age*threat+age*depriv+gender*threat+gender*depriv,data=all.data.ORIENT))
+summary(lm(CONFLICT~age+gender+threat+depriv+age*threat+age*depriv+gender*threat+gender*depriv,data=all.data.CONFLICT))
+
 ```
 
 
 ### Plotting
 ```{r}
 
-ggplot(data=all.data.ALERT[!is.na(all.data.ALERT$gender),],aes(depriv,ALERT))+geom_point(size=1,colour=all.data.ALERT[!is.na(all.data.ALERT$gender),]$age)+geom_smooth(method=lm)+ facet_wrap(~ factor(gender,labels=c("Gender 1","Gender 2")))
+ggplot(data=all.data.ALERT[!is.na(all.data.ALERT$gender),],aes(depriv,ALERT))+geom_point(size=1,colour=all.data.ALERT[!is.na(all.data.ALERT$gender),]$age)+geom_smooth(method=lm)+ facet_wrap(~ factor(gender,labels=c("Male","Female")))
 
-ggplot(data=all.data.ALERT[!is.na(all.data.ALERT$gender),],aes(depriv,ALERT))+geom_point(size=1,colour=all.data.ALERT[!is.na(all.data.ALERT$gender),]$gender)+geom_smooth(method=lm)+ facet_grid(factor(all.data.ALERT[!is.na(all.data.ALERT$gender),]$gender,labels=c("Gender 1","Gender 2"))~factor(round(all.data.ALERT[!is.na(all.data.ALERT$gender),]$age)))
+ggplot(data=all.data.ALERT[!is.na(all.data.ALERT$gender),],aes(depriv,ALERT))+geom_point(size=1,colour=all.data.ALERT[!is.na(all.data.ALERT$gender),]$gender)+geom_smooth(method=lm)+ facet_grid(factor(all.data.ALERT[!is.na(all.data.ALERT$gender),]$gender,labels=c("Male","Female"))~factor(round(all.data.ALERT[!is.na(all.data.ALERT$gender),]$age)))
 
-ggplot(data=all.data.ALERT[!is.na(all.data.ALERT$gender),],aes(threat,ALERT))+geom_point(size=1,colour=all.data.ALERT[!is.na(all.data.ALERT$gender),]$age)+geom_smooth(method=lm)+ facet_wrap(~ factor(gender,labels=c("Gender 1","Gender 2")))
+ggplot(data=all.data.ALERT[!is.na(all.data.ALERT$gender),],aes(threat,ALERT))+geom_point(size=1,colour=all.data.ALERT[!is.na(all.data.ALERT$gender),]$age)+geom_smooth(method=lm)+ facet_wrap(~ factor(gender,labels=c("Male","Female")))
 
-ggplot(data=all.data.ALERT[!is.na(all.data.ALERT$gender),],aes(threat,ALERT))+geom_point(size=1,colour=all.data.ALERT[!is.na(all.data.ALERT$gender),]$gender)+geom_smooth(method=lm)+ facet_grid(factor(gender,labels=c("Gender 1","Gender 2"))~factor(round(age)))
+ggplot(data=all.data.ALERT[!is.na(all.data.ALERT$gender),],aes(threat,ALERT))+geom_point(size=1,colour=all.data.ALERT[!is.na(all.data.ALERT$gender),]$gender)+geom_smooth(method=lm)+ facet_grid(factor(gender,labels=c("Male","Female"))~factor(round(age)))
 
 
 ```
@@ -124,19 +154,14 @@ anova(model1,model2,test = "Chisq")
 anova(model2,model3,test = "Chisq")
 anova(model3,model4,test = "Chisq")
 anova(model2,model5,test = "Chisq") # close 0.057
+
 ```
 
 
-### What if we split by symptoms?
+### Next steps: What if we split by symptoms?
 
 ### Sandbox
 ```{r}
-
-summary(lm(threat~age+ALERT+ORIENT+CONFLICT,data=all.data.complete.set[all.data.complete.set$gender==1,]))
-summary(lm(depriv~age+ALERT+ORIENT+CONFLICT,data=all.data.complete.set[all.data.complete.set$gender==1,]))
-
-summary(lm(threat~age+ALERT+ORIENT+CONFLICT,data=all.data.complete.set[all.data.complete.set$gender==2,]))
-summary(lm(depriv~age+ALERT+ORIENT+CONFLICT,data=all.data.complete.set[all.data.complete.set$gender==2,]))
 
 summary(lm(threat~age+gender+ALERT+ORIENT+CONFLICT,data=all.data.complete.set))
 summary(lm(depriv~age+gender+ALERT+ORIENT+CONFLICT,data=all.data.complete.set))
