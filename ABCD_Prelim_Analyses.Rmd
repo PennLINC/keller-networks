@@ -265,6 +265,12 @@ combined.data.noOutliers <- combined.data[(combined.data$thompson_PC1>(mean_PC1-
 
 # calculate a total FPN score
 combined.data.noOutliers$totalFPN <- rowSums(data.frame(as.numeric(combined.data.noOutliers$df4),as.numeric(combined.data.noOutliers$df16),as.numeric(combined.data.noOutliers$df18)))
+
+
+# separate train and test sets
+trainIDs <- read.csv("/Users/ariellekeller/Documents/Kellernet_PrelimAnalysis/train.csv")
+train.data <- merge(combined.data.noOutliers,trainIDs,by="subjectkey") # n=2,143
+test.data <- combined.data.noOutliers[!is.element(combined.data.noOutliers$subjectkey,trainIDs$subjectkey),] #n=2,424
 ```
 
 
@@ -272,66 +278,153 @@ combined.data.noOutliers$totalFPN <- rowSums(data.frame(as.numeric(combined.data
 # Remember that networks 1-17 are in variables df2-18
 ```{r} 
 
-# Replicate findings from Cui et al., 2020
-summary(lm(thompson_PC2~interview_age+sex+df18,data=combined.data.noOutliers)) #0.06
-summary(lm(df18~interview_age,data=combined.data.noOutliers)) # **
-summary(lm(thompson_PC2~interview_age+sex+df16,data=combined.data.noOutliers))
-summary(lm(df16~interview_age,data=combined.data.noOutliers)) # **
-summary(lm(thompson_PC2~interview_age+sex+df4,data=combined.data.noOutliers))
-summary(lm(df4~interview_age,data=combined.data.noOutliers)) # **
+# Try to replicate findings from Cui et al., 2020
+summary(lm(thompson_PC2~interview_age+sex+df18,data=train.data))
+summary(lm(df18~interview_age,data=train.data)) # **
+summary(lm(thompson_PC2~interview_age+sex+df16,data=train.data))
+summary(lm(df16~interview_age,data=train.data)) # **
+summary(lm(thompson_PC2~interview_age+sex+df4,data=train.data))
+summary(lm(df4~interview_age,data=train.data)) # **
 
 # See which networks are associated with which cognitive factor scores
-summary(lm(thompson_PC1~interview_age+sex+df2+df3+df4+df5+df6+df7+df8+df9+df10+df11+df12+df13+df14+df15+df16+df17+df18,data=combined.data.noOutliers))
-summary(lm(thompson_PC2~interview_age+sex+df2+df3+df4+df5+df6+df7+df8+df9+df10+df11+df12+df13+df14+df15+df16+df17+df18,data=combined.data.noOutliers))
-summary(lm(thompson_PC3~interview_age+sex+df2+df3+df4+df5+df6+df7+df8+df9+df10+df11+df12+df13+df14+df15+df16+df17+df18,data=combined.data.noOutliers))
+summary(lm(thompson_PC1~interview_age+sex+df2+df3+df4+df5+df6+df7+df8+df9+df10+df11+df12+df13+df14+df15+df16+df17+df18,data=train.data))
+summary(lm(thompson_PC2~interview_age+sex+df2+df3+df4+df5+df6+df7+df8+df9+df10+df11+df12+df13+df14+df15+df16+df17+df18,data=train.data))
+summary(lm(thompson_PC3~interview_age+sex+df2+df3+df4+df5+df6+df7+df8+df9+df10+df11+df12+df13+df14+df15+df16+df17+df18,data=train.data))
 
 
-summary(lm(df4~interview_age+sex+abuse,data=combined.data.noOutliers))
-summary(lm(df4~interview_age+sex+totalACEs,data=combined.data.noOutliers))
+summary(lm(df4~interview_age+sex+abuse,data=train.data))
+summary(lm(df4~interview_age+sex+totalACEs,data=train.data))
 
-summary(lm(df16~interview_age+sex+abuse,data=combined.data.noOutliers))
-summary(lm(df16~interview_age+sex+totalACEs,data=combined.data.noOutliers))
+summary(lm(df16~interview_age+sex+abuse,data=train.data))
+summary(lm(df16~interview_age+sex+totalACEs,data=train.data))
 
-summary(lm(df18~interview_age+sex+abuse,data=combined.data.noOutliers))
-summary(lm(df18~interview_age+sex+totalACEs,data=combined.data.noOutliers))
+summary(lm(df18~interview_age+sex+abuse,data=train.data))
+summary(lm(df18~interview_age+sex+totalACEs,data=train.data))
 
-summary(lm(thompson_PC1~interview_age+sex+totalACEs,data=combined.data.noOutliers)) # ***
-summary(lm(thompson_PC2~interview_age+sex+totalACEs,data=combined.data.noOutliers)) # *
-summary(lm(thompson_PC3~interview_age+sex+totalACEs,data=combined.data.noOutliers)) # ***
-summary(lm(thompson_PC1~interview_age+sex+abuse,data=combined.data.noOutliers)) # *
-summary(lm(thompson_PC2~interview_age+sex+abuse,data=combined.data.noOutliers)) #ns
-summary(lm(thompson_PC3~interview_age+sex+abuse,data=combined.data.noOutliers)) # *
+summary(lm(thompson_PC1~interview_age+sex+totalACEs,data=train.data)) # ***
+summary(lm(thompson_PC2~interview_age+sex+totalACEs,data=train.data)) # .
+summary(lm(thompson_PC3~interview_age+sex+totalACEs,data=train.data)) # ***
+summary(lm(thompson_PC1~interview_age+sex+abuse,data=train.data)) #ns
+summary(lm(thompson_PC2~interview_age+sex+abuse,data=train.data)) #ns
+summary(lm(thompson_PC3~interview_age+sex+abuse,data=train.data)) #ns
 
 
-summary(lm(thompson_PC1~interview_age+sex+df18,data=combined.data.noOutliers)) # ***
-summary(lm(thompson_PC1~interview_age+sex+df16,data=combined.data.noOutliers)) # ***
-summary(lm(thompson_PC1~interview_age+sex+df4,data=combined.data.noOutliers)) # ns
+summary(lm(thompson_PC1~interview_age+sex+df18,data=train.data)) # ***
+summary(lm(thompson_PC1~interview_age+sex+df16,data=train.data)) # ***
+summary(lm(thompson_PC1~interview_age+sex+df4,data=train.data)) # ns
 
 
 # total FPN:
-summary(lm(thompson_PC1~interview_age+sex+totalFPN,data=combined.data.noOutliers)) # ***
-summary(lm(thompson_PC2~interview_age+sex+totalFPN,data=combined.data.noOutliers)) # .
-summary(lm(thompson_PC3~interview_age+sex+totalFPN,data=combined.data.noOutliers)) # .
+summary(lm(thompson_PC1~interview_age+sex+totalFPN,data=train.data)) # **
+summary(lm(thompson_PC2~interview_age+sex+totalFPN,data=train.data)) # 
+summary(lm(thompson_PC3~interview_age+sex+totalFPN,data=train.data)) # 
 
 
 
-summary(lm(thompson_PC1~interview_age+sex+totalFPN,data=combined.data.noOutliers[combined.data.noOutliers$totalACEs==0,]))
-summary(lm(thompson_PC1~interview_age+sex+totalFPN,data=combined.data.noOutliers[combined.data.noOutliers$totalACEs>0,]))
+summary(lm(thompson_PC1~interview_age+sex+totalFPN,data=train.data[train.data$totalACEs==0,]))
+summary(lm(thompson_PC1~interview_age+sex+totalFPN,data=train.data[train.data$totalACEs>0,]))
 
-ggplot(data=combined.data.noOutliers,aes(totalFPN,thompson_PC1))+geom_point()+geom_smooth(method="lm")
-ggplot(data=combined.data.noOutliers,aes(totalFPN,thompson_PC2))+geom_point()+geom_smooth(method="lm")
-ggplot(data=combined.data.noOutliers,aes(totalFPN,thompson_PC3))+geom_point()+geom_smooth(method="lm")
+ggplot(data=train.data,aes(totalFPN,thompson_PC1))+geom_point()+geom_smooth(method="lm")
+ggplot(data=train.data,aes(totalFPN,thompson_PC2))+geom_point()+geom_smooth(method="lm")
+ggplot(data=train.data,aes(totalFPN,thompson_PC3))+geom_point()+geom_smooth(method="lm")
 
-combined.data.noOutliers$ACEsFactor <- factor(combined.data.noOutliers$totalACEs==0,labels = c("ACEs","No ACEs"))
-ggplot(data=combined.data.noOutliers,aes(totalFPN,thompson_PC1,color=ACEsFactor))+geom_point(size=1)+geom_smooth(method="lm")
+train.data$ACEsFactor <- factor(train.data$totalACEs==0,labels = c("ACEs","No ACEs"))
+test.data$ACEsFactor <- factor(test.data$totalACEs==0,labels = c("ACEs","No ACEs"))
+
+ggplot(data=train.data,aes(totalFPN,thompson_PC1,color=ACEsFactor))+geom_point(size=1)+geom_smooth(method="lm")
 
 
 summary(lm(thompson_PC1~interview_age+sex+totalFPN+ACEsFactor,data=combined.data.noOutliers))
 summary(lm(df18~interview_age+sex+ACEsFactor+ACEsFactor*interview_age+ACEsFactor*sex,data=combined.data.noOutliers))
 
-ggplot(data=combined.data.noOutliers,aes(interview_age,df18,color=ACEsFactor))+geom_point(size=1)+geom_smooth(method="lm")
+ggplot(data=train.data,aes(interview_age,df18,color=ACEsFactor))+geom_point(size=1)+geom_smooth(method="lm")
 
-ggplot(data=combined.data.noOutliers,aes(interview_age,totalFPN,color=ACEsFactor))+geom_point(size=1)+geom_smooth(method="lm")
+ggplot(data=train.data,aes(interview_age,totalFPN,color=ACEsFactor))+geom_point(size=1)+geom_smooth(method="lm")
+
+
+summary(lm(thompson_PC1~interview_age+sex+totalFPN,data=combined.data.noOutliers)) # path B ***
+summary(lm(thompson_PC1~interview_age+sex+ACEsFactor,data=combined.data.noOutliers)) # path C ***
+summary(lm(totalFPN~interview_age+sex+ACEsFactor,data=combined.data.noOutliers)) # path A ns
+summary(lm(thompson_PC1~interview_age+sex+totalFPN+ACEsFactor,data=combined.data.noOutliers)) # path C' *** ***
+
+
+summary(lm(thompson_PC1~interview_age+sex+df18,data=combined.data.noOutliers)) # path B ***
+summary(lm(thompson_PC1~interview_age+sex+ACEsFactor,data=combined.data.noOutliers)) # path C ***
+summary(lm(df18~interview_age+sex+ACEsFactor,data=combined.data.noOutliers)) # path A ns
+summary(lm(thompson_PC1~interview_age+sex+df18+ACEsFactor,data=combined.data.noOutliers)) # path C' *** ***
+
+
+summary(lm(thompson_PC1~interview_age+sex+df16,data=combined.data.noOutliers)) # path B ***
+summary(lm(thompson_PC1~interview_age+sex+ACEsFactor,data=combined.data.noOutliers)) # path C ***
+summary(lm(df16~interview_age+sex+ACEsFactor,data=combined.data.noOutliers)) # path A ns
+summary(lm(thompson_PC1~interview_age+sex+df16+ACEsFactor,data=combined.data.noOutliers)) # path C' *** ***
+
+
+
+
+summary(lm(thompson_PC1~interview_age+sex+totalFPN*ACEsFactor*sex,data=combined.data.noOutliers))
+
+
+ggplot(data=train.data[train.data$sex=="M",],aes(ACEsFactor,totalFPN))+geom_col()
+ggplot(data=train.data[train.data$sex=="F",],aes(ACEsFactor,totalFPN))+geom_bar()
+```
+
+
+#Plotting
+```{r}
+
+df.summary <- train.data %>%
+     group_by(ACEsFactor,sex) %>%
+     summarise(
+         se = sd(totalFPN, na.rm = TRUE)/sqrt(length(totalFPN)),
+         totalFPN = mean(totalFPN))
+ggplot(data=df.summary, aes(x=sex,y=totalFPN,fill=as.factor(interaction(ACEsFactor,sex)))) +
+  geom_bar(stat="identity",position="dodge") + theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank(),
+panel.background = element_blank(), axis.line = element_line(colour = "black")) +xlab("Biological Sex") + ylab("Total FPN (3, 15, 17) Topography") + geom_errorbar(aes(ymin=totalFPN-se, ymax=totalFPN+se), width=.2,position=position_dodge(.9))+coord_cartesian(ylim=c(11500,12000))
+
+
+df.summary <- train.data %>%
+     group_by(ACEsFactor,sex) %>%
+     summarise(
+         se = sd(thompson_PC1, na.rm = TRUE)/sqrt(length(thompson_PC1)),
+         thompson_PC1 = mean(thompson_PC1))
+ggplot(data=df.summary, aes(x=sex,y=thompson_PC1,fill=as.factor(interaction(ACEsFactor,sex)))) +
+  geom_bar(stat="identity",position="dodge") + theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank(),
+panel.background = element_blank(), axis.line = element_line(colour = "black")) +xlab("Biological Sex") + ylab("Thompson PC1") + geom_errorbar(aes(ymin=thompson_PC1-se, ymax=thompson_PC1+se), width=.2,position=position_dodge(.9))+coord_cartesian(ylim=c(220,250))
+
+
+
+df.summary <- train.data %>%
+     group_by(ACEsFactor,sex) %>%
+     summarise(
+         se = sd(df16, na.rm = TRUE)/sqrt(length(df16)),
+         df16 = mean(df16))
+ggplot(data=df.summary, aes(x=sex,y=df16,fill=as.factor(interaction(ACEsFactor,sex)))) +
+  geom_bar(stat="identity",position="dodge") + theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank(),
+panel.background = element_blank(), axis.line = element_line(colour = "black")) +xlab("Biological Sex") + ylab("Net 15 Topography") + geom_errorbar(aes(ymin=df16-se, ymax=df16+se), width=.2,position=position_dodge(.9))+coord_cartesian(ylim=c(1000,1500))
+
+
+df.summary <- train.data %>%
+     group_by(ACEsFactor,sex) %>%
+     summarise(
+         se = sd(df4, na.rm = TRUE)/sqrt(length(df4)),
+         df4 = mean(df4))
+ggplot(data=df.summary, aes(x=sex,y=df4,fill=as.factor(interaction(ACEsFactor,sex)))) +
+  geom_bar(stat="identity",position="dodge") + theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank(),
+panel.background = element_blank(), axis.line = element_line(colour = "black")) +xlab("Biological Sex") + ylab("Net 3 Topography") + geom_errorbar(aes(ymin=df4-se, ymax=df4+se), width=.2,position=position_dodge(.9))+coord_cartesian(ylim=c(6000,6500))
+
+
+
+
+df.summary <- train.data %>%
+     group_by(ACEsFactor,sex) %>%
+     summarise(
+         se = sd(thompson_PC3, na.rm = TRUE)/sqrt(length(thompson_PC3)),
+         thompson_PC3 = mean(thompson_PC3))
+ggplot(data=df.summary, aes(x=sex,y=thompson_PC3,fill=as.factor(interaction(ACEsFactor,sex)))) +
+  geom_bar(stat="identity",position="dodge") + theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank(),
+panel.background = element_blank(), axis.line = element_line(colour = "black")) +xlab("Biological Sex") + ylab("Thompson PC3") + geom_errorbar(aes(ymin=thompson_PC3-se, ymax=thompson_PC3+se), width=.2,position=position_dodge(.9))+coord_cartesian(ylim=c(220,250))
+
 ```
 
 
