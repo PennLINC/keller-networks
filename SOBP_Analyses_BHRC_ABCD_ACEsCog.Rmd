@@ -159,17 +159,110 @@ combined.data.noOutliers$totalACEs <- rowSums(data.frame(as.numeric(combined.dat
 family <-read.table("/Users/ariellekeller/Documents/Kellernet_PrelimAnalysis/ses/acspsw03.txt",header=TRUE)
 family.baseline<-family[family$eventname=="baseline_year_1_arm_1",]
 abcd.data <- merge(combined.data.noOutliers,family.baseline[, c("subjectkey", setdiff(colnames(family.baseline),colnames(combined.data.noOutliers)))],by="subjectkey")
+
+emo.neglect <-read.table("/Users/ariellekeller/Documents/Kellernet_PrelimAnalysis/neglect/crpbi01.txt",header=TRUE)
+emo.neglect.baseline<-emo.neglect[emo.neglect$eventname=="baseline_year_1_arm_1",]
+phy.neglect <-read.table("/Users/ariellekeller/Documents/Kellernet_PrelimAnalysis/neglect/pmq01.txt",header=TRUE)
+phy.neglect.baseline<-phy.neglect[phy.neglect$eventname=="baseline_year_1_arm_1",]
+neglect.data <- merge(emo.neglect.baseline,phy.neglect.baseline[, c("subjectkey", setdiff(colnames(phy.neglect.baseline),colnames(emo.neglect.baseline)))],by="subjectkey")
+
+abcd.data<-merge(abcd.data,neglect.data[,c("subjectkey", setdiff(colnames(neglect.data),colnames(abcd.data)))],by="subjectkey")
+
+# https://www.sciencedirect.com/science/article/pii/S2352289518300821
+abcd.data$acceptance <- rowSums(data.frame(as.numeric(abcd.data$crpbi_parent1_y),as.numeric(abcd.data$crpbi_parent2_y),as.numeric(abcd.data$crpbi_parent3_y),as.numeric(abcd.data$crpbi_parent4_y),as.numeric(abcd.data$crpbi_parent5_y)))
+
+abcd.data$monitoring <- rowSums(data.frame(as.numeric(abcd.data$parent_monitor_q1_y),as.numeric(abcd.data$parent_monitor_q2_y),as.numeric(abcd.data$parent_monitor_q3_y),as.numeric(abcd.data$parent_monitor_q4_y),as.numeric(abcd.data$parent_monitor_q5_y)))
+
+
 ```
 
 
 ```{r}
-summary(lmer(thompson_PC1~interview_age+sex+race_ethnicity+(1|rel_family_id)+totalACEs+totalACEs*sex,data=abcd.data))
-summary(lmer(thompson_PC2~interview_age+sex+race_ethnicity+(1|rel_family_id)+totalACEs+totalACEs*sex,data=abcd.data))
-summary(lmer(thompson_PC3~interview_age+sex+race_ethnicity+(1|rel_family_id)+totalACEs+totalACEs*sex,data=abcd.data))
+summary(lmer(thompson_PC1~interview_age+sex+(1|rel_family_id)+totalACEs+totalACEs*sex,data=abcd.data))
+summary(lmer(thompson_PC2~interview_age+sex+(1|rel_family_id)+totalACEs+totalACEs*sex,data=abcd.data))
+summary(lmer(thompson_PC3~interview_age+sex+(1|rel_family_id)+totalACEs+totalACEs*sex,data=abcd.data))
 
-summary(lmer(thompson_PC1~interview_age+sex+(1|rel_family_id)+abuse+abuse*sex,data=abcd.data))
-summary(lmer(thompson_PC2~interview_age+sex+(1|rel_family_id)+abuse+abuse*sex,data=abcd.data))
-summary(lmer(thompson_PC3~interview_age+sex+(1|rel_family_id)+abuse+abuse*sex,data=abcd.data))
+abcd.data$ACEs.binary <- factor(abcd.data$totalACEs>0,labels = c("More Threat","Less Threat"))
+abcd.data$ACEs.binary.numeric <- as.numeric(abcd.data$ACEs.binary)
+
+summary(lmer(ACEs.binary.numeric~interview_age+sex+(1|rel_family_id)+thompson_PC1+thompson_PC2+thompson_PC3,data=abcd.data))
+
+summary(lmer(acceptance~interview_age+sex+(1|rel_family_id)+thompson_PC1+thompson_PC2+thompson_PC3,data=abcd.data))
+summary(lmer(monitoring~interview_age+sex+(1|rel_family_id)+thompson_PC1+thompson_PC2+thompson_PC3,data=abcd.data))
+
+
+summary(lmer(thompson_PC1~interview_age+sex+(1|rel_family_id)+ACEs.binary.numeric+acceptance+monitoring,data=abcd.data))
+
+summary(lmer(thompson_PC2~interview_age+sex+(1|rel_family_id)+ACEs.binary.numeric+acceptance+monitoring,data=abcd.data))
+
+summary(lmer(thompson_PC3~interview_age+sex+(1|rel_family_id)+ACEs.binary.numeric+acceptance+monitoring,data=abcd.data))
+
+
+ggplot(data=abcd.data,aes(totalACEs,thompson_PC1))+geom_point(size=1,colour=abcd.data$interview_age)+geom_smooth(method=lm)+ facet_wrap(~ factor(sex,labels=c("Male","Female")))
+```
+
+
+
+
+# sandbox
+```{r}
+
+ggplot(data=abcd.data,aes(totalACEs,thompson_PC2))+geom_point(size=1,colour=abcd.data$interview_age)+geom_smooth(method=lm)+ facet_wrap(~ factor(sex,labels=c("Male","Female")))
+
+df.summary <- abcd.data %>%
+     group_by(ACEs.binary,sex) %>%
+     summarise(
+         se = sd(thompson_PC2, na.rm = TRUE)/sqrt(length(thompson_PC2)),
+         thompson_PC2 = mean(thompson_PC2))
+ggplot(data=df.summary, aes(x=sex,y=thompson_PC2,fill=as.factor(interaction(ACEs.binary,sex)))) +
+  geom_bar(stat="identity",position="dodge") + theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank(),
+panel.background = element_blank(), axis.line = element_line(colour = "black")) +xlab("Sex") + ylab("thompson_PC2") + geom_errorbar(aes(ymin=thompson_PC2-se, ymax=thompson_PC2+se), width=.2,position=position_dodge(.9))+coord_cartesian(ylim=c(240,265))
+
+
+df.summary <- abcd.data %>%
+     group_by(ACEs.binary,sex) %>%
+     summarise(
+         se = sd(thompson_PC1, na.rm = TRUE)/sqrt(length(thompson_PC1)),
+         thompson_PC1 = mean(thompson_PC1))
+ggplot(data=df.summary, aes(x=sex,y=thompson_PC1,fill=as.factor(interaction(ACEs.binary,sex)))) +
+  geom_bar(stat="identity",position="dodge") + theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank(),
+panel.background = element_blank(), axis.line = element_line(colour = "black")) +xlab("Sex") + ylab("thompson_PC1") + geom_errorbar(aes(ymin=thompson_PC1-se, ymax=thompson_PC1+se), width=.2,position=position_dodge(.9))+coord_cartesian(ylim=c(220,245))
+
+
+df.summary <- abcd.data %>%
+     group_by(ACEs.binary,sex) %>%
+     summarise(
+         se = sd(thompson_PC3, na.rm = TRUE)/sqrt(length(thompson_PC3)),
+         thompson_PC3 = mean(thompson_PC3))
+ggplot(data=df.summary, aes(x=sex,y=thompson_PC3,fill=as.factor(interaction(ACEs.binary,sex)))) +
+  geom_bar(stat="identity",position="dodge") + theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank(),
+panel.background = element_blank(), axis.line = element_line(colour = "black")) +xlab("Sex") + ylab("thompson_PC3") + geom_errorbar(aes(ymin=thompson_PC3-se, ymax=thompson_PC3+se), width=.2,position=position_dodge(.9))+coord_cartesian(ylim=c(220,245))
+
+
+
+summary(lmer(thompson_PC1~interview_age+sex+(1|rel_family_id)+ACEs.binary+ACEs.binary*interview_age,data=abcd.data))
+summary(lmer(thompson_PC2~interview_age+sex+(1|rel_family_id)+ACEs.binary+ACEs.binary*interview_age,data=abcd.data))
+summary(lmer(thompson_PC3~interview_age+sex+(1|rel_family_id)+ACEs.binary+ACEs.binary*interview_age,data=abcd.data))
+
+
+abcd.data$agesRounded <- round(abcd.data$interview_age)
+df.summary <- abcd.data %>%
+     group_by(ACEs.binary,sex,agesRounded) %>%
+     summarise(
+         se = sd(thompson_PC1, na.rm = TRUE)/sqrt(length(thompson_PC1)),
+         thompson_PC1 = mean(thompson_PC1))
+ggplot(data=df.summary, aes(x=sex,y=thompson_PC1,fill=as.factor(interaction(ACEs.binary,sex)))) +
+  geom_bar(stat="identity",position="dodge") + theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank(),
+panel.background = element_blank(), axis.line = element_line(colour = "black")) +xlab("Sex") + ylab("thompson_PC1") + geom_errorbar(aes(ymin=thompson_PC1-se, ymax=thompson_PC1+se), width=.2,position=position_dodge(.9))+ facet_wrap(~ factor(round(agesRounded)))
+
+df.summary <- abcd.data %>%
+     group_by(ACEs.binary,agesRounded) %>%
+     summarise(
+         se = sd(thompson_PC1, na.rm = TRUE)/sqrt(length(thompson_PC1)),
+         thompson_PC1 = mean(thompson_PC1))
+ggplot(data=df.summary, aes(x=ACEs.binary,y=thompson_PC1)) +
+  geom_bar(stat="identity",position="dodge") + theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank(),
+panel.background = element_blank(), axis.line = element_line(colour = "black")) +xlab("ACEs") + ylab("thompson_PC1") + geom_errorbar(aes(ymin=thompson_PC1-se, ymax=thompson_PC1+se), width=.2,position=position_dodge(.9))+ facet_wrap(~ factor(round(agesRounded)))+coord_cartesian(ylim=c(210,255))
 ```
 
 
