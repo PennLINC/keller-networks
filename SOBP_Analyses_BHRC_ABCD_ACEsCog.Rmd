@@ -210,7 +210,7 @@ abcd.data$acceptance.binary.numeric <- as.numeric(abcd.data$acceptance.binary)
 data.long <- gather(abcd.data, CogType, CogScore, thompson_PC1,thompson_PC2,thompson_PC3, factor_key=TRUE)
 abcd.long <- gather(data.long, ACEsType, ACEsScore, acceptance.binary.numeric,monitoring.binary.numeric,abuse.binary.numeric,trauma.binary.numeric, factor_key=TRUE)
 
-abcd.long.complete <- abcd.long[complete.cases(abcd.long[,c("CogType","CogScore","ACEsType","ACEsScore")]),c("CogType","CogScore","ACEsType","ACEsScore")]
+abcd.long.complete <- abcd.long[complete.cases(abcd.long[,c("CogType","CogScore","ACEsType","ACEsScore")]),c("CogType","CogScore","ACEsType","ACEsScore","interview_age","sex","rel_family_id")]
 
 ggplot(data=abcd.long.complete, aes(x=ACEsScore,y=CogScore,fill=interaction(ACEsType,CogType))) +
   geom_bar(stat="identity",position="dodge") + theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank(),
@@ -226,10 +226,34 @@ panel.background = element_blank(), axis.line = element_line(colour = "black")) 
 ```{r}
 
 summary(lmer(thompson_PC1~interview_age+sex+(1|rel_family_id)+acceptance.binary+monitoring.binary+abuse.binary+trauma.binary,data=abcd.data))
+p.adjust(c(0.615, 2e-16,0.035,6.96e-11),method="bonferroni")
 
 summary(lmer(thompson_PC2~interview_age+sex+(1|rel_family_id)+acceptance.binary+monitoring.binary+abuse.binary+trauma.binary,data=abcd.data))
+p.adjust(c(0.389, 7.47e-15,0.0096,4.39e-7),method="bonferroni")
 
 summary(lmer(thompson_PC3~interview_age+sex+(1|rel_family_id)+acceptance.binary+monitoring.binary+abuse.binary+trauma.binary,data=abcd.data))
+p.adjust(c(0.034, 2e-16,0.014,6.18e-8),method="bonferroni")
+
+
+summary(lmer(thompson_PC1~interview_age+sex+(1|rel_family_id)+monitoring.binary+monitoring.binary*sex,data=abcd.data))
+summary(lmer(thompson_PC2~interview_age+sex+(1|rel_family_id)+monitoring.binary+monitoring.binary*sex,data=abcd.data))
+summary(lmer(thompson_PC3~interview_age+sex+(1|rel_family_id)+monitoring.binary+monitoring.binary*sex,data=abcd.data))
+
+summary(lmer(thompson_PC1~interview_age+sex+(1|rel_family_id)+abuse.binary+abuse.binary*sex,data=abcd.data))
+summary(lmer(thompson_PC2~interview_age+sex+(1|rel_family_id)+abuse.binary+abuse.binary*sex,data=abcd.data))
+summary(lmer(thompson_PC3~interview_age+sex+(1|rel_family_id)+abuse.binary+abuse.binary*sex,data=abcd.data))
+
+summary(lmer(thompson_PC1~interview_age+sex+(1|rel_family_id)+trauma.binary+trauma.binary*sex,data=abcd.data))
+summary(lmer(thompson_PC2~interview_age+sex+(1|rel_family_id)+trauma.binary+trauma.binary*sex,data=abcd.data))
+summary(lmer(thompson_PC3~interview_age+sex+(1|rel_family_id)+trauma.binary+trauma.binary*sex,data=abcd.data))
+
+summary(lmer(thompson_PC3~interview_age+sex+(1|rel_family_id)+acceptance.binary+acceptance.binary*sex,data=abcd.data))
+
+
+summary(lmer(CogScore~interview_age+sex+(1|rel_family_id)+acceptance.binary+CogType+CogType*acceptance.binary,data=data.long))
+summary(lmer(CogScore~interview_age+sex+(1|rel_family_id)+monitoring.binary+CogType+CogType*monitoring.binary,data=data.long))
+summary(lmer(CogScore~interview_age+sex+(1|rel_family_id)+abuse.binary+CogType+CogType*abuse.binary,data=data.long))
+summary(lmer(CogScore~interview_age+sex+(1|rel_family_id)+trauma.binary+CogType+CogType*trauma.binary,data=data.long))
 
 
 
