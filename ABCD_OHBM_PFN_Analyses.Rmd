@@ -12,6 +12,10 @@ library(ggplot2)
 library(lsr)
 library(lme4)
 library(lmerTest)
+library(mediation)
+library(ggcorrplot)
+library(corrplot)
+library(RColorBrewer)
 ```
 
 
@@ -160,19 +164,207 @@ abcd.data$acceptance.binary.numeric <- as.numeric(abcd.data$acceptance.binary)
 
 
 # calculate a total FPN score
-combined.data.noOutliers$totalFPN <- rowSums(data.frame(as.numeric(combined.data.noOutliers$df4),as.numeric(combined.data.noOutliers$df16),as.numeric(combined.data.noOutliers$df18)))
+abcd.data$totalFPN <- rowSums(data.frame(as.numeric(abcd.data$df4),as.numeric(abcd.data$df16),as.numeric(abcd.data$df18)))
 
 
 # separate train and test sets
 trainIDs <- read.csv("/Users/ariellekeller/Documents/Kellernet_PrelimAnalysis/train.csv")
-train.data <- merge(combined.data.noOutliers,trainIDs,by="subjectkey") # n=2,149
-test.data <- combined.data.noOutliers[!is.element(combined.data.noOutliers$subjectkey,trainIDs$subjectkey),] #n=2,424
+train.data <- merge(abcd.data,trainIDs,by="subjectkey") # n=2,148
+test.data <- abcd.data[!is.element(abcd.data$subjectkey,trainIDs$subjectkey),] #n=2,151
 ```
 
 
 
 # Run some models!
 ```{r}
+# Network 17 is specifically associated with PC1 and not PC2 or PC3
+summary(lmer(thompson_PC1~interview_age+sex+(1|rel_family_id)+df18,data=train.data)) #***
+summary(lmer(thompson_PC2~interview_age+sex+(1|rel_family_id)+df18,data=train.data))
+summary(lmer(thompson_PC3~interview_age+sex+(1|rel_family_id)+df18,data=train.data))
+
+# Network 15 is specifically associated with PC1 and PC3 but not PC2
+summary(lmer(thompson_PC1~interview_age+sex+(1|rel_family_id)+df16,data=train.data)) #**
+summary(lmer(thompson_PC2~interview_age+sex+(1|rel_family_id)+df16,data=train.data))
+summary(lmer(thompson_PC3~interview_age+sex+(1|rel_family_id)+df16,data=train.data)) #**
+
+# Network 3 is not associated with any of the PCs
+summary(lmer(thompson_PC1~interview_age+sex+(1|rel_family_id)+df4,data=train.data)) 
+summary(lmer(thompson_PC2~interview_age+sex+(1|rel_family_id)+df4,data=train.data))
+summary(lmer(thompson_PC3~interview_age+sex+(1|rel_family_id)+df4,data=train.data))
+
+
+# We already know that trauma and physical neglect are associated with impairment in PC1
+# Physical neglect is also associated with impairment in PC3
+summary(lmer(thompson_PC1~interview_age+sex+(1|rel_family_id)+trauma.binary,data=train.data)) #**
+summary(lmer(thompson_PC1~interview_age+sex+(1|rel_family_id)+monitoring.binary,data=train.data)) #***
+summary(lmer(thompson_PC3~interview_age+sex+(1|rel_family_id)+monitoring.binary,data=train.data)) #***
+
+
+# Are any subtypes of ACEs associated with PFN topography?
+summary(lmer(totalFPN~interview_age+sex+(1|rel_family_id)+monitoring.binary,data=train.data)) # ns
+summary(lmer(totalFPN~interview_age+sex+(1|rel_family_id)+acceptance.binary,data=train.data)) # ns
+summary(lmer(totalFPN~interview_age+sex+(1|rel_family_id)+abuse.binary,data=train.data)) # ns
+summary(lmer(totalFPN~interview_age+sex+(1|rel_family_id)+trauma.binary,data=train.data)) # ns
+
+summary(lmer(df18~interview_age+sex+(1|rel_family_id)+monitoring.binary,data=train.data)) # ns
+summary(lmer(df18~interview_age+sex+(1|rel_family_id)+acceptance.binary,data=train.data)) # ns
+summary(lmer(df18~interview_age+sex+(1|rel_family_id)+abuse.binary,data=train.data)) # ns
+summary(lmer(df18~interview_age+sex+(1|rel_family_id)+trauma.binary,data=train.data)) # ns
+
+summary(lmer(df16~interview_age+sex+(1|rel_family_id)+monitoring.binary,data=train.data)) # ns (0.056)
+summary(lmer(df16~interview_age+sex+(1|rel_family_id)+acceptance.binary,data=train.data)) # ns
+summary(lmer(df16~interview_age+sex+(1|rel_family_id)+abuse.binary,data=train.data)) # ns
+summary(lmer(df16~interview_age+sex+(1|rel_family_id)+trauma.binary,data=train.data)) # ns
+
+summary(lmer(df4~interview_age+sex+(1|rel_family_id)+monitoring.binary,data=train.data)) # ns
+summary(lmer(df4~interview_age+sex+(1|rel_family_id)+acceptance.binary,data=train.data)) # ns
+summary(lmer(df4~interview_age+sex+(1|rel_family_id)+abuse.binary,data=train.data)) # ns
+summary(lmer(df4~interview_age+sex+(1|rel_family_id)+trauma.binary,data=train.data)) # ns
 
 ```
 
+
+# Mediation analyses -- these are significant!
+```{r}
+# Mediation: trauma --> Network 17 --> PC1 (path C does decrease) *
+summary(lmer(thompson_PC1~interview_age+sex+(1|rel_family_id)+trauma.binary,data=train.data))
+summary(lmer(thompson_PC1~interview_age+sex+(1|rel_family_id)+trauma.binary+df18,data=train.data))
+
+bs_indir = c()
+for (i in 1:1000){
+  thisSample <- sample(c(1:length(train.data$subjectkey)),length(train.data$subjectkey),replace=TRUE)
+  pathc<-lmer(thompson_PC1~interview_age+sex+(1|rel_family_id)+trauma.binary,data=train.data[thisSample,])
+  pathcp<-lmer(thompson_PC1~interview_age+sex+(1|rel_family_id)+trauma.binary+df18,data=train.data[thisSample,])
+  indir<-fixef(pathc)[4]-fixef(pathcp)[5]
+  bs_indir <- c(bs_indir,indir)
+}
+t.test(bs_indir,conf.level=0.95)
+
+# Mediation: trauma --> Network 15 --> PC1 (path C does not decrease)
+summary(lmer(thompson_PC1~interview_age+sex+(1|rel_family_id)+trauma.binary,data=train.data))
+summary(lmer(thompson_PC1~interview_age+sex+(1|rel_family_id)+trauma.binary+df16,data=train.data))
+
+
+# Mediation: physical neglect --> Network 17 --> PC1 (path C does decrease) *
+summary(lmer(thompson_PC1~interview_age+sex+(1|rel_family_id)+monitoring.binary,data=train.data))
+summary(lmer(thompson_PC1~interview_age+sex+(1|rel_family_id)+monitoring.binary+df18,data=train.data))
+
+
+bs_indir = c()
+for (i in 1:1000){
+  thisSample <- sample(c(1:length(train.data$subjectkey)),length(train.data$subjectkey),replace=TRUE)
+  pathc<-lmer(thompson_PC1~interview_age+sex+(1|rel_family_id)+monitoring.binary,data=train.data[thisSample,])
+  pathcp<-lmer(thompson_PC1~interview_age+sex+(1|rel_family_id)+monitoring.binary+df18,data=train.data[thisSample,])
+  indir<-fixef(pathc)[4]-fixef(pathcp)[5]
+  bs_indir <- c(bs_indir,indir)
+}
+t.test(bs_indir,conf.level=0.95)
+
+
+# Mediation: physical neglect --> Network 15 --> PC1 (path C does not decrease)
+summary(lmer(thompson_PC1~interview_age+sex+(1|rel_family_id)+monitoring.binary,data=train.data))
+summary(lmer(thompson_PC1~interview_age+sex+(1|rel_family_id)+monitoring.binary+df16,data=train.data))
+
+# Mediation: physical neglect --> Network 17 --> PC3 (path C does decrease) *
+summary(lmer(thompson_PC3~interview_age+sex+(1|rel_family_id)+monitoring.binary,data=train.data))
+summary(lmer(thompson_PC3~interview_age+sex+(1|rel_family_id)+monitoring.binary+df18,data=train.data))
+
+bs_indir = c()
+for (i in 1:1000){
+  thisSample <- sample(c(1:length(train.data$subjectkey)),length(train.data$subjectkey),replace=TRUE)
+  pathc<-lmer(thompson_PC3~interview_age+sex+(1|rel_family_id)+monitoring.binary,data=train.data[thisSample,])
+  pathcp<-lmer(thompson_PC3~interview_age+sex+(1|rel_family_id)+monitoring.binary+df18,data=train.data[thisSample,])
+  indir<-fixef(pathc)[4]-fixef(pathcp)[5]
+  bs_indir <- c(bs_indir,indir)
+}
+t.test(bs_indir,conf.level=0.95)
+
+# Mediation: physical neglect --> Network 15 --> PC3 (path C does not decrease)
+summary(lmer(thompson_PC3~interview_age+sex+(1|rel_family_id)+monitoring.binary,data=train.data))
+summary(lmer(thompson_PC3~interview_age+sex+(1|rel_family_id)+monitoring.binary+df16,data=train.data))
+
+
+```
+
+
+
+# No moderations were significant
+```{r}
+# Moderation: trauma * Network 17 --> PC1
+summary(lmer(thompson_PC1~interview_age+sex+(1|rel_family_id)+trauma.binary*df18,data=train.data))
+
+# Moderation: trauma * Network 15 --> PC1
+summary(lmer(thompson_PC1~interview_age+sex+(1|rel_family_id)+trauma.binary*df16,data=train.data))
+
+# Moderation: physical neglect * Network 17 --> PC1
+summary(lmer(thompson_PC1~interview_age+sex+(1|rel_family_id)+monitoring.binary*df18,data=train.data))
+
+# Moderation: physical neglect * Network 15 --> PC1
+summary(lmer(thompson_PC1~interview_age+sex+(1|rel_family_id)+monitoring.binary*df16,data=train.data))
+
+# Moderation: physical neglect * Network 17 --> PC3
+summary(lmer(thompson_PC3~interview_age+sex+(1|rel_family_id)+monitoring.binary*df18,data=train.data))
+
+# Moderation: physical neglect * Network 15 --> PC3 
+summary(lmer(thompson_PC3~interview_age+sex+(1|rel_family_id)+monitoring.binary*df16,data=train.data))
+
+
+# Moderation: sex * trauma * Network 17 --> PC1
+summary(lmer(thompson_PC1~interview_age+sex+(1|rel_family_id)+trauma.binary*df18*sex,data=train.data))
+
+# Moderation: sex * trauma * Network 15 --> PC1
+summary(lmer(thompson_PC1~interview_age+sex+(1|rel_family_id)+trauma.binary*df16*sex,data=train.data))
+
+# Moderation: sex * physical neglect * Network 17 --> PC1
+summary(lmer(thompson_PC1~interview_age+sex+(1|rel_family_id)+monitoring.binary*df18*sex,data=train.data))
+
+# Moderation: sex * physical neglect * Network 15 --> PC1
+summary(lmer(thompson_PC1~interview_age+sex+(1|rel_family_id)+monitoring.binary*df16*sex,data=train.data))
+
+# Moderation: sex * physical neglect * Network 17 --> PC3
+summary(lmer(thompson_PC3~interview_age+sex+(1|rel_family_id)+monitoring.binary*df18*sex,data=train.data))
+
+# Moderation: sex * physical neglect * Network 15 --> PC3 
+summary(lmer(thompson_PC3~interview_age+sex+(1|rel_family_id)+monitoring.binary*df16*sex,data=train.data))
+```
+
+
+# Analyses of total FPN
+```{r}
+summary(lmer(thompson_PC1~interview_age+sex+(1|rel_family_id)+totalFPN,data=train.data)) #**
+summary(lmer(thompson_PC2~interview_age+sex+(1|rel_family_id)+totalFPN,data=train.data)) #ns
+summary(lmer(thompson_PC3~interview_age+sex+(1|rel_family_id)+totalFPN,data=train.data)) #ns
+
+summary(lmer(totalFPN~interview_age+sex+(1|rel_family_id)+monitoring.binary,data=train.data)) #ns
+summary(lmer(totalFPN~interview_age+sex+(1|rel_family_id)+acceptance.binary,data=train.data)) #ns
+summary(lmer(totalFPN~interview_age+sex+(1|rel_family_id)+abuse.binary,data=train.data)) #ns
+summary(lmer(totalFPN~interview_age+sex+(1|rel_family_id)+trauma.binary,data=train.data)) #ns
+
+summary(lmer(totalFPN~interview_age+sex+(1|rel_family_id)+monitoring.binary*sex,data=train.data)) #ns
+summary(lmer(totalFPN~interview_age+sex+(1|rel_family_id)+acceptance.binary*sex,data=train.data)) #ns
+summary(lmer(totalFPN~interview_age+sex+(1|rel_family_id)+abuse.binary*sex,data=train.data)) #ns
+summary(lmer(totalFPN~interview_age+sex+(1|rel_family_id)+trauma.binary*sex,data=train.data)) #ns
+
+```
+
+
+# Port data over to matlab (womp) so I can run the Canlab multilevel mediation toolbox 
+```{r}
+write.csv(train.data,file="trainData_forMatlab.csv")
+write.csv(test.data,file="testData_forMatlab.csv")
+```
+
+
+# Create a correlation matrix of all the important variables
+```{r}
+important.variables <- train.data[,c("interview_age","monitoring","acceptance","abuse","trauma","df2","df3","df4","df5","df6","df7","df8","df9","df10","df11","df12","df13","df14","df15","df16","df17","df18","thompson_PC1","thompson_PC2","thompson_PC3")]
+
+colnames(important.variables)<-c("Age","Phys Neglect","Emo Neglect","Abuse","Trauma","PFN 1","PFN 2","PFN 3","PFN 4","PFN 5","PFN 6","PFN 7","PFN 8","PFN 9","PFN 10","PFN 11","PFN 12","PFN 13","PFN 14","PFN 15","PFN 16","PFN 17","General Cog (PC1)","Exec Fxn (PC2)","Learn/Mem (PC3)")
+
+png("/Users/ariellekeller/Documents/Kellernet_PrelimAnalysis/ABCD_PFNs_ACES_Cog_CorrMatrix.png",
+    width = 8000, 
+    height = 4000,
+    res=300)
+corrplot(cor(important.variables,use="complete.obs"),method=c("number"), tl.col = "black", col=brewer.pal(n=8, name="Spectral"))
+dev.off() 
+```
