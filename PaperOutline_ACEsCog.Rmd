@@ -373,13 +373,19 @@ family <-read.table("/Users/ariellekeller/Documents/Kellernet_PrelimAnalysis/ses
 family.baseline<-family[family$eventname=="baseline_year_1_arm_1",]
 abcd.data.almost <- merge(combined.data.noOutliers,family.baseline[, c("subjectkey", setdiff(colnames(family.baseline),colnames(combined.data.noOutliers)))],by="subjectkey")
 
+# also add in the variable for site ID to use as a covariate
+site_info <- readRDS("/Users/ariellekeller/Documents/Kellernet_PrelimAnalysis/DEAP-siteID.rds")
+site.baseline<-site_info[site_info$event_name=="baseline_year_1_arm_1",]
+colnames(site.baseline)[1]<-"subjectkey"
+abcd.data.withFamAndSite <- merge(abcd.data.almost,site.baseline[,c("subjectkey", setdiff(colnames(site.baseline),colnames(abcd.data.almost)))],by="subjectkey")
+
 emo.neglect <-read.table("/Users/ariellekeller/Documents/Kellernet_PrelimAnalysis/neglect/crpbi01.txt",header=TRUE)
 emo.neglect.baseline<-emo.neglect[emo.neglect$eventname=="baseline_year_1_arm_1",]
 phy.neglect <-read.table("/Users/ariellekeller/Documents/Kellernet_PrelimAnalysis/neglect/pmq01.txt",header=TRUE)
 phy.neglect.baseline<-phy.neglect[phy.neglect$eventname=="baseline_year_1_arm_1",]
 neglect.data <- merge(emo.neglect.baseline,phy.neglect.baseline[, c("subjectkey", setdiff(colnames(phy.neglect.baseline),colnames(emo.neglect.baseline)))],by="subjectkey")
 
-abcd.data<-merge(abcd.data.almost,neglect.data[,c("subjectkey", setdiff(colnames(neglect.data),colnames(abcd.data.almost)))],by="subjectkey")
+abcd.data<-merge(abcd.data.withFamAndSite,neglect.data[,c("subjectkey", setdiff(colnames(neglect.data),colnames(abcd.data.withFamAndSite)))],by="subjectkey")
 
 # Calculate subscales of deprivation (emotional and physical neglect) - see this ref for motivation https://www.sciencedirect.com/science/article/pii/S2352289518300821
 abcd.data$acceptance <- rowMeans(data.frame(as.numeric(abcd.data$crpbi_parent1_y),as.numeric(abcd.data$crpbi_parent2_y),as.numeric(abcd.data$crpbi_parent3_y),as.numeric(abcd.data$crpbi_parent4_y),as.numeric(abcd.data$crpbi_parent5_y)))
@@ -434,9 +440,9 @@ corrplot(cor(important.variables2,use="complete.obs"),method=c("number"), tl.col
 
 ## Run linear mixed effects models!
 ```{r}
-summary(lmer(thompson_PC1~interview_age+sex+(1|rel_family_id)+acceptance+monitoring,data=abcd.data))
-summary(lmer(thompson_PC2~interview_age+sex+(1|rel_family_id)+acceptance+monitoring,data=abcd.data))
-summary(lmer(thompson_PC3~interview_age+sex+(1|rel_family_id)+acceptance+monitoring,data=abcd.data))
+summary(lmer(thompson_PC1~interview_age+sex+(1|rel_family_id)+(1|abcd_site)+acceptance+monitoring,data=abcd.data))
+summary(lmer(thompson_PC2~interview_age+sex+(1|rel_family_id)+(1|abcd_site)+acceptance+monitoring,data=abcd.data))
+summary(lmer(thompson_PC3~interview_age+sex+(1|rel_family_id)+(1|abcd_site)+acceptance+monitoring,data=abcd.data))
 
 # summary(lmer(thompson_PC1~interview_age+sex+(1|rel_family_id)+acceptance.binary+monitoring.binary+abuse.binary+trauma.binary,data=abcd.data))
 # p.adjust(c(0.615, 2e-16,0.035,6.96e-11),method="bonferroni")
