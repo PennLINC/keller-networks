@@ -5,10 +5,7 @@ date: "12/14/2021"
 output: html_document
 ---
 
----
-title: "SOBP_Analyses_BHRC_ABCD_ACEsCog"
-output: html_document
----
+
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
 options(width=250)
@@ -18,10 +15,12 @@ library(ggplot2)
 library(lsr)
 library(lme4)
 library(lmerTest)
+library(ggcorrplot)
+library(corrplot)
 library(RColorBrewer)
 ```
 
-## The goal of these analyses will be to compare ACEs (particularly Threat experiences) to cognition in two samples, the Brazilian High-Risk Cohort (BHRC) and the Adolescent Brain and Cognitive Development (ABCD) study. 
+# The goal of these analyses will be to compare ACEs (particularly Threat experiences) to cognition in two samples, the Brazilian High-Risk Cohort (BHRC) and the Adolescent Brain and Cognitive Development (ABCD) study. 
 
 ## ~~~~~~~~ BHRC ~~~~~~~~
 
@@ -29,94 +28,263 @@ library(RColorBrewer)
 ```{r}
 # Load and combine dataframes
 sle_factors<-readRDS("/Users/ariellekeller/Documents/Kellernet_PrelimAnalysis/BHRC/thdp_20212904.rds")
-ant_scores<-read.csv("/Users/ariellekeller/Documents/Kellernet_PrelimAnalysis/BHRC/ANT SCORES 100-1700ms RT cutoffs.csv")
+#ant_scores<-read.csv("/Users/ariellekeller/Documents/Kellernet_PrelimAnalysis/BHRC/ANT SCORES 100-1700ms RT cutoffs.csv")
 demo_data<-read.csv("/Users/ariellekeller/Documents/Kellernet_PrelimAnalysis/BHRC/BHRCS_w0_Arielle.csv")
 proposal.data<-readRDS("/Users/ariellekeller/Documents/Kellernet_PrelimAnalysis/BHRC/PhD_117BHRC_2021_10_02.rds") 
-colnames(sle_factors)[2]<-"SUBJECTID"
+data_depriv_emoneg<-readRDS("/Users/ariellekeller/Downloads/Arielle_BHRC_2021_12_26_2.rds")
+sle_and_depriv <- merge(sle_factors[,c(1,2,4,5)],data_depriv_emoneg,by="ident") #don't duplicate redcap event name
+colnames(sle_and_depriv)[2]<-"SUBJECTID"
 colnames(demo_data)[2]<-"SUBJECTID"
-combined.data1<-merge(demo_data,ant_scores,by="SUBJECTID")
-proposal.data.w0<-proposal.data[proposal.data$redcap_event_name=="wave0_arm_1",c("ident", setdiff(colnames(proposal.data),colnames(combined.data1)))]
-combined.data2<-merge(proposal.data.w0,sle_factors,by="ident")
-all.data<-merge(combined.data1,combined.data2,by="SUBJECTID")
+#combined.data1<-merge(demo_data,ant_scores,by="SUBJECTID")
+proposal.data.w0<-proposal.data[proposal.data$redcap_event_name=="wave0_arm_1",c("ident", setdiff(colnames(proposal.data),colnames(demo_data)))]
+combined.data2<-merge(proposal.data.w0,sle_and_depriv[,c("ident", setdiff(colnames(sle_and_depriv),colnames(proposal.data.w0)))],by="ident")
+all.data<-merge(demo_data,combined.data2[,c("SUBJECTID", setdiff(colnames(combined.data2),colnames(demo_data)))],by="SUBJECTID")
 all.data$gender<-as.factor(all.data$gender)
 all.data<-all.data[!is.na(all.data$gender),] #make sure gender variable is available for all participants
-
-# Remove outliers (>3sd) on Alerting, Orienting, and Conflict scores
-ALERT.3sd <- sd(all.data[!is.na(all.data$ALERT),]$ALERT)*3
-ORIENT.3sd <- sd(all.data[!is.na(all.data$ORIENT),]$ORIENT)*3
-CONFLICT.3sd <- sd(all.data[!is.na(all.data$CONFLICT),]$CONFLICT)*3
-ALERT.mean <- mean(all.data[!is.na(all.data$ALERT),]$ALERT)
-ORIENT.mean <- mean(all.data[!is.na(all.data$ORIENT),]$ORIENT)
-CONFLICT.mean <- mean(all.data[!is.na(all.data$CONFLICT),]$CONFLICT)
-
-# These will be separate data structures retaining as many subjects as possible for each of the 3 performance metrics
-all.data.ALERT <- all.data[(all.data$ALERT>(ALERT.mean-ALERT.3sd) & all.data$ALERT<(ALERT.mean+ALERT.3sd)),]
-all.data.ORIENT <- all.data[(all.data$ORIENT>(ORIENT.mean-ORIENT.3sd) & all.data$ORIENT<(ORIENT.mean+ORIENT.3sd)),]
-all.data.CONFLICT <- all.data[(all.data$CONFLICT>(CONFLICT.mean-CONFLICT.3sd) & all.data$CONFLICT<(CONFLICT.mean+CONFLICT.3sd)),]
-
-# This is a complete set with subjects who have all 3 measures within the bounds of 3SD
-all.data.complete.set <- all.data[(all.data$ALERT>(ALERT.mean-ALERT.3sd) & all.data$ALERT<(ALERT.mean+ALERT.3sd)) & (all.data$ORIENT>(ORIENT.mean-ORIENT.3sd) & all.data$ORIENT<(ORIENT.mean+ORIENT.3sd)) & (all.data$CONFLICT>(CONFLICT.mean-CONFLICT.3sd) & all.data$CONFLICT<(CONFLICT.mean+CONFLICT.3sd)),]
+# 
+# # Remove outliers (>3sd) on Alerting, Orienting, and Conflict scores
+# ALERT.3sd <- sd(all.data[!is.na(all.data$ALERT),]$ALERT)*3
+# ORIENT.3sd <- sd(all.data[!is.na(all.data$ORIENT),]$ORIENT)*3
+# CONFLICT.3sd <- sd(all.data[!is.na(all.data$CONFLICT),]$CONFLICT)*3
+# ALERT.mean <- mean(all.data[!is.na(all.data$ALERT),]$ALERT)
+# ORIENT.mean <- mean(all.data[!is.na(all.data$ORIENT),]$ORIENT)
+# CONFLICT.mean <- mean(all.data[!is.na(all.data$CONFLICT),]$CONFLICT)
+# 
+# # These will be separate data structures retaining as many subjects as possible for each of the 3 performance metrics
+# all.data.ALERT <- all.data[(all.data$ALERT>(ALERT.mean-ALERT.3sd) & all.data$ALERT<(ALERT.mean+ALERT.3sd)),]
+# all.data.ORIENT <- all.data[(all.data$ORIENT>(ORIENT.mean-ORIENT.3sd) & all.data$ORIENT<(ORIENT.mean+ORIENT.3sd)),]
+# all.data.CONFLICT <- all.data[(all.data$CONFLICT>(CONFLICT.mean-CONFLICT.3sd) & all.data$CONFLICT<(CONFLICT.mean+CONFLICT.3sd)),]
+# 
+# # This is a complete set with subjects who have all 3 measures within the bounds of 3SD
+# all.data.complete.set <- all.data[(all.data$ALERT>(ALERT.mean-ALERT.3sd) & all.data$ALERT<(ALERT.mean+ALERT.3sd)) & (all.data$ORIENT>(ORIENT.mean-ORIENT.3sd) & all.data$ORIENT<(ORIENT.mean+ORIENT.3sd)) & (all.data$CONFLICT>(CONFLICT.mean-CONFLICT.3sd) & all.data$CONFLICT<(CONFLICT.mean+CONFLICT.3sd)),]
 
 # Add new data for BHRC
 new_cog_data<-readRDS("/Users/ariellekeller/Documents/Kellernet_PrelimAnalysis/BHRC/BHRCS_Cog_IQ_TDE_w0.rds")
 colnames(new_cog_data)[1]<-"SUBJECTID"
-all.data.new<-merge(all.data.complete.set,new_cog_data[,c("SUBJECTID", setdiff(colnames(new_cog_data),colnames(all.data.complete.set)))],by="SUBJECTID")
+all.data.new<-merge(all.data,new_cog_data[,c("SUBJECTID", setdiff(colnames(new_cog_data),colnames(all.data)))],by="SUBJECTID")
 
 
 ```
 
 
-### Run linear models using Threat and Deprivation scores to predict cognition
-# Note: Gender 1 = Male, Gender 2 = Female
-# Covariates for age, gender, and random effects for school and state
-
-
-# Significant:
 ```{r}
-summary(lmer(EF~age+gender+(1|state)+(1|schoolID)+threat,data=all.data.new)) # ***
-summary(lmer(EF~age+gender+(1|state)+(1|schoolID)+depriv,data=all.data.new)) # ***
+# Remove outliers (>3sd)
+EF.3sd <- sd(all.data.new[!is.na(all.data.new$EF),]$EF)*3
+WM.3sd <- sd(all.data.new[!is.na(all.data.new$WM),]$WM)*3
+TP.3sd <- sd(all.data.new[!is.na(all.data.new$TP),]$TP)*3
+IC.3sd <- sd(all.data.new[!is.na(all.data.new$IC),]$IC)*3
+EF.mean <- mean(all.data.new[!is.na(all.data.new$EF),]$EF)
+WM.mean <- mean(all.data.new[!is.na(all.data.new$WM),]$WM)
+TP.mean <- mean(all.data.new[!is.na(all.data.new$TP),]$TP)
+IC.mean <- mean(all.data.new[!is.na(all.data.new$IC),]$IC)
 
-summary(lmer(WM~age+gender+(1|state)+(1|schoolID)+threat,data=all.data.new)) # * (does not pass correction)
-summary(lmer(WM~age+gender+(1|state)+(1|schoolID)+depriv,data=all.data.new)) # ***
-
-summary(lmer(TP~age+gender+(1|state)+(1|schoolID)+threat,data=all.data.new)) # ***
-summary(lmer(TP~age+gender+(1|state)+(1|schoolID)+depriv,data=all.data.new)) # ***
-
-p.adjust(c(0.000463,9.78e-07,0.0184,1.16e-07,0.000233,5.03e-06),method="bonferroni")
+# This is a complete set with subjects who have all 4 cog measures within the bounds of 3SD
+all.data.complete <- all.data.new[(all.data.new$EF>(EF.mean-EF.3sd) & all.data.new$EF<(EF.mean+EF.3sd)) & (all.data.new$WM>(WM.mean-WM.3sd) & all.data.new$WM<(WM.mean+WM.3sd)) & (all.data.new$IC>(IC.mean-IC.3sd) & all.data.new$IC<(IC.mean+IC.3sd)) & (all.data.new$TP>(TP.mean-TP.3sd) & all.data.new$TP<(TP.mean+TP.3sd)),]
 
 ```
 
 
-# Plots:
+## Run linear models using Threat and Deprivation scores to predict cognition
+### Note: Gender 1 = Male, Gender 2 = Female
+### Covariates for age, gender, and random effects for school and state
+
+
+### Significant:
 ```{r}
-correlation <- cor.test(all.data.new$threat,all.data.new$WM)
-ggplot(data=all.data.new,aes(threat,WM))+geom_point(size=1,colour='#70677D')+geom_smooth(method=lm,colour='black')+ theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank(),
-panel.background = element_blank(), axis.line = element_line(colour = "black")) +ylab('Working Memory') + xlab('Threat') + ggtitle(paste("r=",as.character(round(correlation$estimate,3)),", p=",as.character(round(correlation$p.value,3))))
+# summary(lmer(EF~age+gender+(1|state)+(1|schoolID)+threat,data=all.data.new)) # ***
+# summary(lmer(EF~age+gender+(1|state)+(1|schoolID)+depriv,data=all.data.new)) # ***
+# 
+# summary(lmer(WM~age+gender+(1|state)+(1|schoolID)+threat,data=all.data.new)) # * (does not pass correction)
+# summary(lmer(WM~age+gender+(1|state)+(1|schoolID)+depriv,data=all.data.new)) # ***
+# 
+# summary(lmer(TP~age+gender+(1|state)+(1|schoolID)+threat,data=all.data.new)) # ***
+# summary(lmer(TP~age+gender+(1|state)+(1|schoolID)+depriv,data=all.data.new)) # ***
+# 
+# p.adjust(c(0.000463,9.78e-07,0.0184,1.16e-07,0.000233,5.03e-06),method="bonferroni")
 
-correlation <- cor.test(all.data.new$depriv,all.data.new$WM)
-ggplot(data=all.data.new,aes(depriv,WM))+geom_point(size=1,colour='#7393C4')+geom_smooth(method=lm,colour='black')+ theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank(),
-panel.background = element_blank(), axis.line = element_line(colour = "black")) +ylab('Working Memory') + xlab('Deprivation') + ggtitle(paste("r=",as.character(round(correlation$estimate,3)),", p=",as.character(round(correlation$p.value,3))))
 ```
 
 
-
-# Non-significant:
+### Plots:
 ```{r}
-summary(lmer(ALERT~age+gender+(1|state)+(1|schoolID)+threat,data=all.data.new)) #ns
-summary(lmer(ORIENT~age+gender+(1|state)+(1|schoolID)+threat,data=all.data.new)) #ns
-summary(lmer(CONFLICT~age+gender+(1|state)+(1|schoolID)+threat,data=all.data.new)) #ns
-
-summary(lmer(ALERT~age+gender+(1|state)+(1|schoolID)+depriv,data=all.data.new)) #ns
-summary(lmer(ORIENT~age+gender+(1|state)+(1|schoolID)+depriv,data=all.data.new)) #ns
-summary(lmer(CONFLICT~age+gender+(1|state)+(1|schoolID)+depriv,data=all.data.new)) #ns
-
-summary(lmer(ALERT~age+gender+(1|state)+(1|schoolID)+threat+depriv+threat*gender+depriv*gender,data=all.data.new)) # 0.055
-
-summary(lmer(IC~age+gender+(1|state)+(1|schoolID)+threat,data=all.data.new)) # ns
-summary(lmer(IC~age+gender+(1|state)+(1|schoolID)+depriv,data=all.data.new)) # ns
+# correlation <- cor.test(all.data.new$threat,all.data.new$WM)
+# ggplot(data=all.data.new,aes(threat,WM))+geom_point(size=1,colour='#70677D')+geom_smooth(method=lm,colour='black')+ theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank(),
+# panel.background = element_blank(), axis.line = element_line(colour = "black")) +ylab('Working Memory') + xlab('Threat') + ggtitle(paste("r=",as.character(round(correlation$estimate,3)),", p=",as.character(round(correlation$p.value,3))))
+# 
+# correlation <- cor.test(all.data.new$depriv,all.data.new$WM)
+# ggplot(data=all.data.new,aes(depriv,WM))+geom_point(size=1,colour='#7393C4')+geom_smooth(method=lm,colour='black')+ theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank(),
+# panel.background = element_blank(), axis.line = element_line(colour = "black")) +ylab('Working Memory') + xlab('Deprivation') + ggtitle(paste("r=",as.character(round(correlation$estimate,3)),", p=",as.character(round(correlation$p.value,3))))
 ```
 
 
+### For the effects where there was also a significant effect of gender, look for an interaction (there are none)
+```{r}
+# summary(lmer(EF~age+gender+(1|state)+(1|schoolID)+threat+threat*gender,data=all.data.new)) # ns
+# summary(lmer(EF~age+gender+(1|state)+(1|schoolID)+depriv+depriv*gender,data=all.data.new)) # ns
+# 
+# summary(lmer(TP~age+gender+(1|state)+(1|schoolID)+threat+threat*gender,data=all.data.new)) # ns
+# summary(lmer(TP~age+gender+(1|state)+(1|schoolID)+depriv+depriv*gender,data=all.data.new)) # ns
+```
+
+### Look for specificity on the type of ACE
+#### Note that the correlation between threat and deprivation here is only 0.386
+```{r}
+# cor.test(all.data.new$threat,all.data.new$depriv)
+# summary(lmer(EF~age+gender+(1|state)+(1|schoolID)+threat+depriv,data=all.data.new)) # specific to depriv ***
+# summary(lmer(WM~age+gender+(1|state)+(1|schoolID)+threat+depriv,data=all.data.new)) # specific to depriv ***
+# summary(lmer(TP~age+gender+(1|state)+(1|schoolID)+threat+depriv,data=all.data.new)) # both threat * and depriv ***
+```
+
+## Create a correlation matrix of all the important variables
+### Since the cognitive variables are more highly correlated with each other, we won't test specificity in a single model
+```{r}
+# important.variables <- all.data.new[,c("age","gender","threat","depriv","EF","WM","TP","IC")]
+# important.variables$gender <- as.numeric(important.variables$gender)
+# colnames(important.variables)<-c("Age","Gender","Threat","Depriv","Exec. Fxn","Working Mem","Temp. Proc.","Inhib. Cont.")
+# corrplot(cor(important.variables,use="complete.obs"),method=c("number"), tl.col = "black", col=brewer.pal(n=8, name="Spectral"))
+```
+
+
+
+### Non-significant:
+```{r}
+# summary(lmer(ALERT~age+gender+(1|state)+(1|schoolID)+threat,data=all.data.new)) #ns
+# summary(lmer(ORIENT~age+gender+(1|state)+(1|schoolID)+threat,data=all.data.new)) #ns
+# summary(lmer(CONFLICT~age+gender+(1|state)+(1|schoolID)+threat,data=all.data.new)) #ns
+# 
+# summary(lmer(ALERT~age+gender+(1|state)+(1|schoolID)+depriv,data=all.data.new)) #ns
+# summary(lmer(ORIENT~age+gender+(1|state)+(1|schoolID)+depriv,data=all.data.new)) #ns
+# summary(lmer(CONFLICT~age+gender+(1|state)+(1|schoolID)+depriv,data=all.data.new)) #ns
+# 
+# summary(lmer(ALERT~age+gender+(1|state)+(1|schoolID)+threat+depriv+threat*gender+depriv*gender,data=all.data.new)) # 0.055
+# 
+# summary(lmer(IC~age+gender+(1|state)+(1|schoolID)+threat,data=all.data.new)) # ns
+# summary(lmer(IC~age+gender+(1|state)+(1|schoolID)+depriv,data=all.data.new)) # ns
+```
+
+
+### Look for specificity on Physical vs Emotional Neglect (as an replication of ABCD findings)
+```{r}
+# Calculate emotional neglect variable by averaging across relevant items (the "depriv" one will represent physical neglect)
+all.data.complete<-all.data.complete[all.data.complete$fat38a<50,]
+all.data.complete$emo_neglect <- -rowMeans(data.frame(as.numeric(all.data.complete$fat38a)/3,as.numeric(all.data.complete$fat39a)/3),na.rm=TRUE) #,as.numeric(all.data.complete$fes18),as.numeric(all.data.complete$fes1),as.numeric(all.data.complete$fes42),as.numeric(all.data.complete$fes48))
+
+# Verify that correlation is low: it's 0.222
+cor.test(all.data.complete$depriv,all.data.complete$emo_neglect)
+
+# Test specificity
+summary(lmer(EF~age+gender+(1|state)+(1|schoolID)+emo_neglect+depriv,data=all.data.complete)) # both sig
+summary(lmer(WM~age+gender+(1|state)+(1|schoolID)+emo_neglect+depriv,data=all.data.complete)) # both sig
+summary(lmer(TP~age+gender+(1|state)+(1|schoolID)+emo_neglect+depriv,data=all.data.complete)) # both sig 
+summary(lmer(IC~age+gender+(1|state)+(1|schoolID)+emo_neglect+depriv,data=all.data.complete)) # just depriv 
+
+p.adjust(c(0.005610,1.72e-09,0.0030,3.22e-08,0.0111,5.23e-09,0.323230,0.014438),method="bonferroni") 
+
+
+
+# try restricting age to ABCD range:
+all.data.complete.ageres <- all.data.complete[all.data.complete$age<11.1,]
+all.data.complete.ageres <- all.data.complete.ageres[all.data.complete.ageres$age>8.9,]
+all.data.complete.ageres<-all.data.complete.ageres[all.data.complete.ageres$fat38a<50,]
+all.data.complete.ageres$emo_neglect <- -rowMeans(data.frame(as.numeric(all.data.complete.ageres$fat38a)/3,as.numeric(all.data.complete.ageres$fat39a)/3),na.rm=TRUE) 
+cor.test(all.data.complete.ageres$depriv,all.data.complete.ageres$emo_neglect)
+
+# Test specificity
+summary(lmer(EF~age+gender+(1|state)+(1|schoolID)+emo_neglect+depriv,data=all.data.complete.ageres)) # both sig
+summary(lmer(WM~age+gender+(1|state)+(1|schoolID)+emo_neglect+depriv,data=all.data.complete.ageres)) # both sig
+summary(lmer(TP~age+gender+(1|state)+(1|schoolID)+emo_neglect+depriv,data=all.data.complete.ageres)) # both sig 
+summary(lmer(IC~age+gender+(1|state)+(1|schoolID)+emo_neglect+depriv,data=all.data.complete.ageres)) # just depriv 
+
+p.adjust(c(0.0202,3.91e-05,0.0556,1.12e-06,0.020554,0.000262,0.4224,0.0588),method="bonferroni") 
+```
+
+
+
+## Create a correlation matrix of all the important variables
+### Since the cognitive variables are more highly correlated with each other, we won't test specificity in a single model
+```{r}
+important.variables <- all.data.complete.ageres[,c("age","gender","emo_neglect","depriv","EF","WM","TP","IC")]
+important.variables$gender <- as.numeric(important.variables$gender)
+colnames(important.variables)<-c("Age","Gender","EmoNeglect","PhysNeglect","Exec. Fxn","Working Mem","Temp. Proc.","Inhib. Cont.")
+corrplot(cor(important.variables,use="complete.obs"),method=c("number"), tl.col = "black", col=brewer.pal(n=8, name="Spectral"))
+```
+
+## Plots
+```{r}
+cols <- brewer.pal(10,"Paired")
+
+ png("/Users/ariellekeller/Documents/Kellernet_PrelimAnalysis/PhysEmoNeglect_ABCD_BHRC/Scatterplots/BHRC_PhysNeg_TP.png",
+     width = 3000, 
+     height = 3000,
+     res = 850)
+ggplot(all.data.complete.ageres, aes(x=depriv,y=TP)) +
+  geom_point(colour=cols[2],size=1) +
+  geom_smooth(method=lm,color="black") + xlab("Physical Neglect") + ylab("Temporal Processing") + theme(legend.position = "none") + theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank(),panel.background = element_blank(), axis.line = element_line(colour = "black"))
+dev.off()
+
+ png("/Users/ariellekeller/Documents/Kellernet_PrelimAnalysis/PhysEmoNeglect_ABCD_BHRC/Scatterplots/BHRC_PhysNeg_EF.png",
+     width = 3000, 
+     height = 3000,
+     res = 850)
+ggplot(all.data.complete.ageres, aes(x=depriv,y=EF)) +
+  geom_point(colour=cols[4],size=1) +
+  geom_smooth(method=lm,color="black") + xlab("Physical Neglect") + ylab("Exec. Fxn.") + theme(legend.position = "none") + theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank(),panel.background = element_blank(), axis.line = element_line(colour = "black"))
+dev.off()
+
+ png("/Users/ariellekeller/Documents/Kellernet_PrelimAnalysis/PhysEmoNeglect_ABCD_BHRC/Scatterplots/BHRC_PhysNeg_WM.png",
+     width = 3000, 
+     height = 3000,
+     res = 850)
+ggplot(all.data.complete.ageres, aes(x=depriv,y=WM)) +
+  geom_point(colour=cols[8],size=1) +
+  geom_smooth(method=lm,color="black") + xlab("Physical Neglect") + ylab("Working Memory") + theme(legend.position = "none") + theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank(),panel.background = element_blank(), axis.line = element_line(colour = "black"))
+dev.off()
+
+ png("/Users/ariellekeller/Documents/Kellernet_PrelimAnalysis/PhysEmoNeglect_ABCD_BHRC/Scatterplots/BHRC_PhysNeg_IC.png",
+     width = 3000, 
+     height = 3000,
+     res = 850)
+ggplot(all.data.complete.ageres, aes(x=depriv,y=IC)) +
+  geom_point(colour=cols[10],size=1) +
+  geom_smooth(method=lm,color="black") + xlab("Physical Neglect") + ylab("Inhibitory Control") + theme(legend.position = "none") + theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank(),panel.background = element_blank(), axis.line = element_line(colour = "black"))
+dev.off()
+
+ png("/Users/ariellekeller/Documents/Kellernet_PrelimAnalysis/PhysEmoNeglect_ABCD_BHRC/Scatterplots/BHRC_EmoNeg_TP.png",
+     width = 3000, 
+     height = 3000,
+     res = 850)
+ggplot(all.data.complete.ageres, aes(x=emo_neglect,y=TP)) +
+  geom_point(colour=cols[2],size=1) +
+  geom_smooth(method=lm,color="black") + xlab("Emotional Neglect") + ylab("Temporal Processing") + theme(legend.position = "none") + theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank(),panel.background = element_blank(), axis.line = element_line(colour = "black"))
+dev.off()
+
+ png("/Users/ariellekeller/Documents/Kellernet_PrelimAnalysis/PhysEmoNeglect_ABCD_BHRC/Scatterplots/BHRC_EmoNeg_EF.png",
+     width = 3000, 
+     height = 3000,
+     res = 850)
+ggplot(all.data.complete.ageres, aes(x=emo_neglect,y=EF)) +
+  geom_point(colour=cols[4],size=1) +
+  geom_smooth(method=lm,color="black") + xlab("Emotional Neglect") + ylab("Exec. Fxn.") + theme(legend.position = "none") + theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank(),panel.background = element_blank(), axis.line = element_line(colour = "black"))
+dev.off()
+
+ png("/Users/ariellekeller/Documents/Kellernet_PrelimAnalysis/PhysEmoNeglect_ABCD_BHRC/Scatterplots/BHRC_EmoNeg_WM.png",
+     width = 3000, 
+     height = 3000,
+     res = 850)
+ggplot(all.data.complete.ageres, aes(x=emo_neglect,y=WM)) +
+  geom_point(colour=cols[8],size=1) +
+  geom_smooth(method=lm,color="black") + xlab("Emotional Neglect") + ylab("Working Memory") + theme(legend.position = "none") + theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank(),panel.background = element_blank(), axis.line = element_line(colour = "black"))
+dev.off()
+
+ png("/Users/ariellekeller/Documents/Kellernet_PrelimAnalysis/PhysEmoNeglect_ABCD_BHRC/Scatterplots/BHRC_EmoNeg_IC.png",
+     width = 3000, 
+     height = 3000,
+     res = 850)
+ggplot(all.data.complete.ageres, aes(x=emo_neglect,y=IC)) +
+  geom_point(colour=cols[10],size=1) +
+  geom_smooth(method=lm,color="black") + xlab("Emotional Neglect") + ylab("Inhibitory Control") + theme(legend.position = "none") + theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank(),panel.background = element_blank(), axis.line = element_line(colour = "black"))
+dev.off()
+```
 
 
 ## ~~~~~~~~ ABCD ~~~~~~~~
@@ -130,10 +298,10 @@ lmt.baseline<-lmt[lmt$eventname=="baseline_year_1_arm_1",]
 merged.data2 <- merge(nihtb.baseline,lmt.baseline[, c("subjectkey", setdiff(colnames(lmt.baseline),colnames(nihtb.baseline)))],by="subjectkey")
 ravlt<-read.table("/Users/ariellekeller/Documents/Kellernet_PrelimAnalysis/Thomp/abcd_ps01.txt",header=TRUE)
 ravlt.baseline<-ravlt[ravlt$eventname=="baseline_year_1_arm_1",]
-merged.data3 <- merge(merged.data2,ravlt.baseline[, c("subjectkey", setdiff(colnames(ravlt.baseline),colnames(merged.data2)))],by="subjectkey")
-trauma<-read.table("/Users/ariellekeller/Documents/Kellernet_PrelimAnalysis/Strife/abcd_ptsd01.txt",header=TRUE)
-trauma.baseline<-trauma[trauma$eventname=="baseline_year_1_arm_1",]
-combined.data <- merge(merged.data3,trauma.baseline[, c("subjectkey", setdiff(colnames(trauma.baseline),colnames(merged.data3)))],by="subjectkey")
+combined.data <- merge(merged.data2,ravlt.baseline[, c("subjectkey", setdiff(colnames(ravlt.baseline),colnames(merged.data2)))],by="subjectkey")
+# trauma<-read.table("/Users/ariellekeller/Documents/Kellernet_PrelimAnalysis/Strife/abcd_ptsd01.txt",header=TRUE)
+# trauma.baseline<-trauma[trauma$eventname=="baseline_year_1_arm_1",]
+# combined.data <- merge(merged.data3,trauma.baseline[, c("subjectkey", setdiff(colnames(trauma.baseline),colnames(merged.data3)))],by="subjectkey")
 combined.data$nihtbx_flanker_uncorrected <- as.numeric(combined.data$nihtbx_flanker_uncorrected)
 combined.data$nihtbx_picvocab_uncorrected <- as.numeric(combined.data$nihtbx_picvocab_uncorrected)
 combined.data$nihtbx_list_uncorrected <- as.numeric(combined.data$nihtbx_list_uncorrected)
@@ -188,22 +356,22 @@ sum(combined.data$thompson_PC3 > mean_PC3+sd3_PC3,na.rm=TRUE) # 2 outliers
 combined.data.noOutliers <- combined.data[(combined.data$thompson_PC1>(mean_PC1-sd3_PC1) & combined.data$thompson_PC1<(mean_PC1+sd3_PC1) & combined.data$thompson_PC2>(mean_PC2-sd3_PC2) & combined.data$thompson_PC2<(mean_PC2+sd3_PC2) & combined.data$thompson_PC3>(mean_PC3-sd3_PC3) & combined.data$thompson_PC3<(mean_PC3+sd3_PC3)),]
 
 
-# Calculate types of ACEs
-combined.data.noOutliers[,224:240]<-as.numeric(unlist(combined.data.noOutliers[,224:240]))
-
-# Calculation of subscore with items related to physical and sexual abuse
-combined.data.noOutliers$abuse <- rowSums(data.frame(as.numeric(combined.data.noOutliers$ksads_ptsd_raw_761_p),as.numeric(combined.data.noOutliers$ksads_ptsd_raw_762_p),as.numeric(combined.data.noOutliers$ksads_ptsd_raw_763_p),as.numeric(combined.data.noOutliers$ksads_ptsd_raw_767_p),as.numeric(combined.data.noOutliers$ksads_ptsd_raw_768_p),as.numeric(combined.data.noOutliers$ksads_ptsd_raw_769_p)),na.rm=TRUE)
-
-# Calculation of subscore with items related to trauma (car accidents, natural disasters, loss, etc.)
-combined.data.noOutliers$trauma <- rowSums(data.frame(as.numeric(combined.data.noOutliers$ksads_ptsd_raw_754_p),as.numeric(combined.data.noOutliers$ksads_ptsd_raw_755_p),as.numeric(combined.data.noOutliers$ksads_ptsd_raw_756_p),as.numeric(combined.data.noOutliers$ksads_ptsd_raw_757_p),as.numeric(combined.data.noOutliers$ksads_ptsd_raw_758_p),as.numeric(combined.data.noOutliers$ksads_ptsd_raw_759_p),as.numeric(combined.data.noOutliers$ksads_ptsd_raw_760_p),as.numeric(combined.data.noOutliers$ksads_ptsd_raw_766_p),as.numeric(combined.data.noOutliers$ksads_ptsd_raw_770_p)),na.rm=TRUE)
-
-# Calculation of total score from the KSADS items
-combined.data.noOutliers$totalACEs <- rowSums(data.frame(as.numeric(combined.data.noOutliers$ksads_ptsd_raw_754_p),as.numeric(combined.data.noOutliers$ksads_ptsd_raw_755_p),as.numeric(combined.data.noOutliers$ksads_ptsd_raw_756_p),as.numeric(combined.data.noOutliers$ksads_ptsd_raw_757_p),as.numeric(combined.data.noOutliers$ksads_ptsd_raw_758_p),as.numeric(combined.data.noOutliers$ksads_ptsd_raw_759_p),as.numeric(combined.data.noOutliers$ksads_ptsd_raw_760_p),as.numeric(combined.data.noOutliers$ksads_ptsd_raw_761_p),as.numeric(combined.data.noOutliers$ksads_ptsd_raw_762_p),as.numeric(combined.data.noOutliers$ksads_ptsd_raw_763_p),as.numeric(combined.data.noOutliers$ksads_ptsd_raw_764_p),as.numeric(combined.data.noOutliers$ksads_ptsd_raw_765_p),as.numeric(combined.data.noOutliers$ksads_ptsd_raw_766_p),as.numeric(combined.data.noOutliers$ksads_ptsd_raw_767_p),as.numeric(combined.data.noOutliers$ksads_ptsd_raw_768_p),as.numeric(combined.data.noOutliers$ksads_ptsd_raw_769_p),as.numeric(combined.data.noOutliers$ksads_ptsd_raw_770_p)),na.rm=TRUE)
+# # Calculate types of ACEs
+# combined.data.noOutliers[,224:240]<-as.numeric(unlist(combined.data.noOutliers[,224:240]))
+# 
+# # Calculation of subscore with items related to physical and sexual abuse
+# combined.data.noOutliers$abuse <- rowSums(data.frame(as.numeric(combined.data.noOutliers$ksads_ptsd_raw_761_p),as.numeric(combined.data.noOutliers$ksads_ptsd_raw_762_p),as.numeric(combined.data.noOutliers$ksads_ptsd_raw_763_p),as.numeric(combined.data.noOutliers$ksads_ptsd_raw_767_p),as.numeric(combined.data.noOutliers$ksads_ptsd_raw_768_p),as.numeric(combined.data.noOutliers$ksads_ptsd_raw_769_p)),na.rm=TRUE)
+# 
+# # Calculation of subscore with items related to trauma (car accidents, natural disasters, loss, etc.)
+# combined.data.noOutliers$trauma <- rowSums(data.frame(as.numeric(combined.data.noOutliers$ksads_ptsd_raw_754_p),as.numeric(combined.data.noOutliers$ksads_ptsd_raw_755_p),as.numeric(combined.data.noOutliers$ksads_ptsd_raw_756_p),as.numeric(combined.data.noOutliers$ksads_ptsd_raw_757_p),as.numeric(combined.data.noOutliers$ksads_ptsd_raw_758_p),as.numeric(combined.data.noOutliers$ksads_ptsd_raw_759_p),as.numeric(combined.data.noOutliers$ksads_ptsd_raw_760_p),as.numeric(combined.data.noOutliers$ksads_ptsd_raw_766_p),as.numeric(combined.data.noOutliers$ksads_ptsd_raw_770_p)),na.rm=TRUE)
+# 
+# # Calculation of total score from the KSADS items
+# combined.data.noOutliers$totalACEs <- rowSums(data.frame(as.numeric(combined.data.noOutliers$ksads_ptsd_raw_754_p),as.numeric(combined.data.noOutliers$ksads_ptsd_raw_755_p),as.numeric(combined.data.noOutliers$ksads_ptsd_raw_756_p),as.numeric(combined.data.noOutliers$ksads_ptsd_raw_757_p),as.numeric(combined.data.noOutliers$ksads_ptsd_raw_758_p),as.numeric(combined.data.noOutliers$ksads_ptsd_raw_759_p),as.numeric(combined.data.noOutliers$ksads_ptsd_raw_760_p),as.numeric(combined.data.noOutliers$ksads_ptsd_raw_761_p),as.numeric(combined.data.noOutliers$ksads_ptsd_raw_762_p),as.numeric(combined.data.noOutliers$ksads_ptsd_raw_763_p),as.numeric(combined.data.noOutliers$ksads_ptsd_raw_764_p),as.numeric(combined.data.noOutliers$ksads_ptsd_raw_765_p),as.numeric(combined.data.noOutliers$ksads_ptsd_raw_766_p),as.numeric(combined.data.noOutliers$ksads_ptsd_raw_767_p),as.numeric(combined.data.noOutliers$ksads_ptsd_raw_768_p),as.numeric(combined.data.noOutliers$ksads_ptsd_raw_769_p),as.numeric(combined.data.noOutliers$ksads_ptsd_raw_770_p)),na.rm=TRUE)
 
 # Remember to add in this variable about family structure so we can use it as a covariate
 family <-read.table("/Users/ariellekeller/Documents/Kellernet_PrelimAnalysis/ses/acspsw03.txt",header=TRUE)
 family.baseline<-family[family$eventname=="baseline_year_1_arm_1",]
-abcd.data <- merge(combined.data.noOutliers,family.baseline[, c("subjectkey", setdiff(colnames(family.baseline),colnames(combined.data.noOutliers)))],by="subjectkey")
+abcd.data.almost <- merge(combined.data.noOutliers,family.baseline[, c("subjectkey", setdiff(colnames(family.baseline),colnames(combined.data.noOutliers)))],by="subjectkey")
 
 emo.neglect <-read.table("/Users/ariellekeller/Documents/Kellernet_PrelimAnalysis/neglect/crpbi01.txt",header=TRUE)
 emo.neglect.baseline<-emo.neglect[emo.neglect$eventname=="baseline_year_1_arm_1",]
@@ -211,101 +379,175 @@ phy.neglect <-read.table("/Users/ariellekeller/Documents/Kellernet_PrelimAnalysi
 phy.neglect.baseline<-phy.neglect[phy.neglect$eventname=="baseline_year_1_arm_1",]
 neglect.data <- merge(emo.neglect.baseline,phy.neglect.baseline[, c("subjectkey", setdiff(colnames(phy.neglect.baseline),colnames(emo.neglect.baseline)))],by="subjectkey")
 
-abcd.data<-merge(abcd.data,neglect.data[,c("subjectkey", setdiff(colnames(neglect.data),colnames(abcd.data)))],by="subjectkey")
+abcd.data<-merge(abcd.data.almost,neglect.data[,c("subjectkey", setdiff(colnames(neglect.data),colnames(abcd.data.almost)))],by="subjectkey")
 
 # Calculate subscales of deprivation (emotional and physical neglect) - see this ref for motivation https://www.sciencedirect.com/science/article/pii/S2352289518300821
-abcd.data$acceptance <- rowSums(data.frame(as.numeric(abcd.data$crpbi_parent1_y),as.numeric(abcd.data$crpbi_parent2_y),as.numeric(abcd.data$crpbi_parent3_y),as.numeric(abcd.data$crpbi_parent4_y),as.numeric(abcd.data$crpbi_parent5_y)))
+abcd.data$acceptance <- rowMeans(data.frame(as.numeric(abcd.data$crpbi_parent1_y),as.numeric(abcd.data$crpbi_parent2_y),as.numeric(abcd.data$crpbi_parent3_y),as.numeric(abcd.data$crpbi_parent4_y),as.numeric(abcd.data$crpbi_parent5_y)))
 
-abcd.data$monitoring <- rowSums(data.frame(as.numeric(abcd.data$parent_monitor_q1_y),as.numeric(abcd.data$parent_monitor_q2_y),as.numeric(abcd.data$parent_monitor_q3_y),as.numeric(abcd.data$parent_monitor_q4_y),as.numeric(abcd.data$parent_monitor_q5_y)))
+abcd.data$monitoring <- rowMeans(data.frame(as.numeric(abcd.data$parent_monitor_q1_y),as.numeric(abcd.data$parent_monitor_q2_y),as.numeric(abcd.data$parent_monitor_q3_y),as.numeric(abcd.data$parent_monitor_q4_y),as.numeric(abcd.data$parent_monitor_q5_y)))
 
 
 
-# Binarize the four ACEs subtypes (2 "Threat" types: Abuse and Trauma; 2 "Deprivation" types: Emotional Neglect and Physical Neglect)
-abcd.data$abuse.binary <- factor(abcd.data$abuse>=1,labels = c("No Abuse","Abuse"))
-abcd.data$abuse.binary.numeric <- as.numeric(abcd.data$abuse.binary)
-abcd.data$trauma.binary <- factor(abcd.data$trauma>=1,labels = c("No Trauma","Trauma"))
-abcd.data$trauma.binary.numeric <- as.numeric(abcd.data$trauma.binary)
-
-median.monitoring = median(na.omit(abcd.data$monitoring))
-median.acceptance = median(na.omit(abcd.data$acceptance))
-abcd.data$monitoring.binary <- factor(abcd.data$monitoring<20,labels = c("Low Physical Neglect","High Physical Neglect"))
-abcd.data$monitoring.binary.numeric <- as.numeric(abcd.data$monitoring.binary)
-abcd.data$acceptance.binary <- factor(abcd.data$acceptance<7.5,labels = c("Low Emotional Neglect","High Emotional Neglect"))
-abcd.data$acceptance.binary.numeric <- as.numeric(abcd.data$acceptance.binary)
+# # Binarize the four ACEs subtypes (2 "Threat" types: Abuse and Trauma; 2 "Deprivation" types: Emotional Neglect and Physical Neglect)
+# abcd.data$abuse.binary <- factor(abcd.data$abuse>=1,labels = c("No Abuse","Abuse"))
+# abcd.data$abuse.binary.numeric <- as.numeric(abcd.data$abuse.binary)
+# abcd.data$trauma.binary <- factor(abcd.data$trauma>=1,labels = c("No Trauma","Trauma"))
+# abcd.data$trauma.binary.numeric <- as.numeric(abcd.data$trauma.binary)
+# 
+# median.monitoring = median(na.omit(abcd.data$monitoring))
+# median.acceptance = median(na.omit(abcd.data$acceptance))
+# abcd.data$monitoring.binary <- factor(abcd.data$monitoring<20,labels = c("Low Physical Neglect","High Physical Neglect"))
+# abcd.data$monitoring.binary.numeric <- as.numeric(abcd.data$monitoring.binary)
+# abcd.data$acceptance.binary <- factor(abcd.data$acceptance<7.5,labels = c("Low Emotional Neglect","High Emotional Neglect"))
+# abcd.data$acceptance.binary.numeric <- as.numeric(abcd.data$acceptance.binary)
 ```
 
 
 ## Plot everything
 ```{r}
-
-data.long <- gather(abcd.data, CogType, CogScore, thompson_PC1,thompson_PC2,thompson_PC3, factor_key=TRUE)
-abcd.long <- gather(data.long, ACEsType, ACEsScore, acceptance.binary.numeric,monitoring.binary.numeric,abuse.binary.numeric,trauma.binary.numeric, factor_key=TRUE)
-
-abcd.long.complete <- abcd.long[complete.cases(abcd.long[,c("CogType","CogScore","ACEsType","ACEsScore")]),c("CogType","CogScore","ACEsType","ACEsScore","interview_age","sex","rel_family_id")]
-
-ggplot(data=abcd.long.complete, aes(x=ACEsScore,y=CogScore,fill=interaction(ACEsType,CogType))) +
-  geom_bar(stat="identity",position="dodge") + theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank(),
-panel.background = element_blank(), axis.line = element_line(colour = "black")) +xlab("ACEs") + ylab("Cognition") +coord_cartesian(ylim=c(250,325)) + facet_grid(abcd.long.complete$ACEsType~abcd.long.complete$CogType)
+# 
+# data.long <- gather(abcd.data, CogType, CogScore, thompson_PC1,thompson_PC2,thompson_PC3, factor_key=TRUE)
+# 
+# names(data.long)[names(data.long) == 'acceptance.binary.numeric'] <- 'depriv.emo'
+# names(data.long)[names(data.long) == 'monitoring.binary.numeric'] <- 'depriv.phys'
+# names(data.long)[names(data.long) == 'trauma.binary.numeric'] <- 'threat.trauma'
+# names(data.long)[names(data.long) == 'abuse.binary.numeric'] <- 'threat.abuse'
+# 
+# abcd.long <- gather(data.long, ACEsType, ACEsScore, depriv.emo,depriv.phys,threat.abuse,threat.trauma, factor_key=TRUE)
+# abcd.long.complete <- abcd.long[complete.cases(abcd.long[,c("CogType","CogScore","ACEsType","ACEsScore")]),c("CogType","CogScore","ACEsType","ACEsScore","interview_age","sex","rel_family_id")]
+# 
+# ggplot(data=abcd.long.complete, aes(x=ACEsScore,y=CogScore,fill=interaction(ACEsType,CogType))) +
+#   geom_bar(stat="identity",position="dodge") + theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank(),
+# panel.background = element_blank(), axis.line = element_line(colour = "black")) +xlab("ACEs") + ylab("Cognition") +coord_cartesian(ylim=c(250,325)) + facet_grid(abcd.long.complete$ACEsType~abcd.long.complete$CogType) + theme(legend.position = "none")
 
 
 ```
 
-
+## Create a correlation matrix of all the important variables
+```{r}
+important.variables2 <- abcd.data[,c("interview_age","sex","acceptance","monitoring","thompson_PC1","thompson_PC2","thompson_PC3")]
+important.variables2$sex <- as.numeric(as.factor(important.variables2$sex))
+colnames(important.variables2)<-c("Age","Sex","EmoNeglect","PhysNeglect","Gen. Cog.","EF","Learning/Mem")
+corrplot(cor(important.variables2,use="complete.obs"),method=c("number"), tl.col = "black", col=brewer.pal(n=8, name="Spectral"))
+```
 
 
 ## Run linear mixed effects models!
 ```{r}
+summary(lmer(thompson_PC1~interview_age+sex+(1|rel_family_id)+acceptance+monitoring,data=abcd.data))
+summary(lmer(thompson_PC2~interview_age+sex+(1|rel_family_id)+acceptance+monitoring,data=abcd.data))
+summary(lmer(thompson_PC3~interview_age+sex+(1|rel_family_id)+acceptance+monitoring,data=abcd.data))
 
-summary(lmer(thompson_PC1~interview_age+sex+(1|rel_family_id)+acceptance.binary+monitoring.binary+abuse.binary+trauma.binary,data=abcd.data))
-p.adjust(c(0.615, 2e-16,0.035,6.96e-11),method="bonferroni")
-
-summary(lmer(thompson_PC2~interview_age+sex+(1|rel_family_id)+acceptance.binary+monitoring.binary+abuse.binary+trauma.binary,data=abcd.data))
-p.adjust(c(0.389, 7.47e-15,0.0096,4.39e-7),method="bonferroni")
-
-summary(lmer(thompson_PC3~interview_age+sex+(1|rel_family_id)+acceptance.binary+monitoring.binary+abuse.binary+trauma.binary,data=abcd.data))
-p.adjust(c(0.034, 2e-16,0.014,6.18e-8),method="bonferroni")
-
-
-summary(lmer(thompson_PC1~interview_age+sex+(1|rel_family_id)+monitoring.binary+monitoring.binary*sex,data=abcd.data))
-summary(lmer(thompson_PC2~interview_age+sex+(1|rel_family_id)+monitoring.binary+monitoring.binary*sex,data=abcd.data))
-summary(lmer(thompson_PC3~interview_age+sex+(1|rel_family_id)+monitoring.binary+monitoring.binary*sex,data=abcd.data))
-
-summary(lmer(thompson_PC1~interview_age+sex+(1|rel_family_id)+abuse.binary+abuse.binary*sex,data=abcd.data))
-summary(lmer(thompson_PC2~interview_age+sex+(1|rel_family_id)+abuse.binary+abuse.binary*sex,data=abcd.data))
-summary(lmer(thompson_PC3~interview_age+sex+(1|rel_family_id)+abuse.binary+abuse.binary*sex,data=abcd.data))
-
-summary(lmer(thompson_PC1~interview_age+sex+(1|rel_family_id)+trauma.binary+trauma.binary*sex,data=abcd.data))
-summary(lmer(thompson_PC2~interview_age+sex+(1|rel_family_id)+trauma.binary+trauma.binary*sex,data=abcd.data))
-summary(lmer(thompson_PC3~interview_age+sex+(1|rel_family_id)+trauma.binary+trauma.binary*sex,data=abcd.data))
-
-summary(lmer(thompson_PC3~interview_age+sex+(1|rel_family_id)+acceptance.binary+acceptance.binary*sex,data=abcd.data))
-
-
-summary(lmer(CogScore~interview_age+sex+(1|rel_family_id)+acceptance.binary+CogType+CogType*acceptance.binary,data=data.long))
-summary(lmer(CogScore~interview_age+sex+(1|rel_family_id)+monitoring.binary+CogType+CogType*monitoring.binary,data=data.long))
-summary(lmer(CogScore~interview_age+sex+(1|rel_family_id)+abuse.binary+CogType+CogType*abuse.binary,data=data.long))
-summary(lmer(CogScore~interview_age+sex+(1|rel_family_id)+trauma.binary+CogType+CogType*trauma.binary,data=data.long))
-
-
-
-
-summary(lmer(thompson_PC1~interview_age+sex+(1|rel_family_id)+acceptance.binary,data=abcd.data))
-summary(lmer(thompson_PC1~interview_age+sex+(1|rel_family_id)+monitoring.binary,data=abcd.data))
-summary(lmer(thompson_PC1~interview_age+sex+(1|rel_family_id)+abuse.binary,data=abcd.data))
-summary(lmer(thompson_PC1~interview_age+sex+(1|rel_family_id)+trauma.binary,data=abcd.data))
-
-summary(lmer(thompson_PC2~interview_age+sex+(1|rel_family_id)+acceptance.binary,data=abcd.data))
-summary(lmer(thompson_PC2~interview_age+sex+(1|rel_family_id)+monitoring.binary,data=abcd.data))
-summary(lmer(thompson_PC2~interview_age+sex+(1|rel_family_id)+abuse.binary,data=abcd.data))
-summary(lmer(thompson_PC2~interview_age+sex+(1|rel_family_id)+trauma.binary,data=abcd.data))
-
-summary(lmer(thompson_PC3~interview_age+sex+(1|rel_family_id)+acceptance.binary,data=abcd.data))
-summary(lmer(thompson_PC3~interview_age+sex+(1|rel_family_id)+monitoring.binary,data=abcd.data))
-summary(lmer(thompson_PC3~interview_age+sex+(1|rel_family_id)+abuse.binary,data=abcd.data))
-summary(lmer(thompson_PC3~interview_age+sex+(1|rel_family_id)+trauma.binary,data=abcd.data))
-
+# summary(lmer(thompson_PC1~interview_age+sex+(1|rel_family_id)+acceptance.binary+monitoring.binary+abuse.binary+trauma.binary,data=abcd.data))
+# p.adjust(c(0.615, 2e-16,0.035,6.96e-11),method="bonferroni")
+# # PC1 is related to physical neglect *** and trauma ***
+# 
+# summary(lmer(thompson_PC2~interview_age+sex+(1|rel_family_id)+acceptance.binary+monitoring.binary+abuse.binary+trauma.binary,data=abcd.data))
+# p.adjust(c(0.389, 7.47e-15,0.0096,4.39e-7),method="bonferroni")
+# # PC1 is related to physical neglect ***, abuse *, and trauma ***
+# 
+# summary(lmer(thompson_PC3~interview_age+sex+(1|rel_family_id)+acceptance.binary+monitoring.binary+abuse.binary+trauma.binary,data=abcd.data))
+# p.adjust(c(0.034, 2e-16,0.014,6.18e-8),method="bonferroni")
+# # PC3 is related to physical neglect *** and trauma ***
 ```
 
 
 
+### no significant interactions with sex
+```{r}
+# summary(lmer(thompson_PC1~interview_age+sex+(1|rel_family_id)+monitoring.binary+monitoring.binary*sex,data=abcd.data))
+# summary(lmer(thompson_PC2~interview_age+sex+(1|rel_family_id)+monitoring.binary+monitoring.binary*sex,data=abcd.data))
+# summary(lmer(thompson_PC3~interview_age+sex+(1|rel_family_id)+monitoring.binary+monitoring.binary*sex,data=abcd.data))
+# 
+# summary(lmer(thompson_PC1~interview_age+sex+(1|rel_family_id)+abuse.binary+abuse.binary*sex,data=abcd.data))
+# summary(lmer(thompson_PC2~interview_age+sex+(1|rel_family_id)+abuse.binary+abuse.binary*sex,data=abcd.data))
+# summary(lmer(thompson_PC3~interview_age+sex+(1|rel_family_id)+abuse.binary+abuse.binary*sex,data=abcd.data))
+# 
+# summary(lmer(thompson_PC1~interview_age+sex+(1|rel_family_id)+trauma.binary+trauma.binary*sex,data=abcd.data))
+# summary(lmer(thompson_PC2~interview_age+sex+(1|rel_family_id)+trauma.binary+trauma.binary*sex,data=abcd.data))
+# summary(lmer(thompson_PC3~interview_age+sex+(1|rel_family_id)+trauma.binary+trauma.binary*sex,data=abcd.data))
+# 
+# summary(lmer(thompson_PC1~interview_age+sex+(1|rel_family_id)+acceptance.binary+acceptance.binary*sex,data=abcd.data))
+# summary(lmer(thompson_PC2~interview_age+sex+(1|rel_family_id)+acceptance.binary+acceptance.binary*sex,data=abcd.data))
+# summary(lmer(thompson_PC3~interview_age+sex+(1|rel_family_id)+acceptance.binary+acceptance.binary*sex,data=abcd.data))
+```
+
+
+### models split out by ACE type
+```{r}
+# summary(lmer(thompson_PC1~interview_age+sex+(1|rel_family_id)+acceptance.binary,data=abcd.data))
+# summary(lmer(thompson_PC1~interview_age+sex+(1|rel_family_id)+monitoring.binary,data=abcd.data)) # ***
+# summary(lmer(thompson_PC1~interview_age+sex+(1|rel_family_id)+abuse.binary,data=abcd.data)) # ***
+# summary(lmer(thompson_PC1~interview_age+sex+(1|rel_family_id)+trauma.binary,data=abcd.data)) # ***
+# 
+# summary(lmer(thompson_PC2~interview_age+sex+(1|rel_family_id)+acceptance.binary,data=abcd.data))
+# summary(lmer(thompson_PC2~interview_age+sex+(1|rel_family_id)+monitoring.binary,data=abcd.data)) # ***
+# summary(lmer(thompson_PC2~interview_age+sex+(1|rel_family_id)+abuse.binary,data=abcd.data)) # **
+# summary(lmer(thompson_PC2~interview_age+sex+(1|rel_family_id)+trauma.binary,data=abcd.data)) # ***
+# 
+# summary(lmer(thompson_PC3~interview_age+sex+(1|rel_family_id)+acceptance.binary,data=abcd.data)) # **
+# summary(lmer(thompson_PC3~interview_age+sex+(1|rel_family_id)+monitoring.binary,data=abcd.data)) # ***
+# summary(lmer(thompson_PC3~interview_age+sex+(1|rel_family_id)+abuse.binary,data=abcd.data)) # **
+# summary(lmer(thompson_PC3~interview_age+sex+(1|rel_family_id)+trauma.binary,data=abcd.data)) # ***
+```
+
+
+## Plots
+```{r}
+cols <- brewer.pal(10,"Paired")
+
+ png("/Users/ariellekeller/Documents/Kellernet_PrelimAnalysis/PhysEmoNeglect_ABCD_BHRC/Scatterplots/ABCD_PhysNeg_PC1.png",
+     width = 3000, 
+     height = 3000,
+     res = 850)
+ggplot(abcd.data, aes(x=-monitoring,y=thompson_PC1)) +
+  geom_point(colour=cols[2],size=1) +
+  geom_smooth(method=lm,color="black") + xlab("Physical Neglect") + ylab("PC1: General Cognition") + theme(legend.position = "none") + theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank(),panel.background = element_blank(), axis.line = element_line(colour = "black"))
+dev.off()
+
+ png("/Users/ariellekeller/Documents/Kellernet_PrelimAnalysis/PhysEmoNeglect_ABCD_BHRC/Scatterplots/ABCD_PhysNeg_PC2.png",
+     width = 3000, 
+     height = 3000,
+     res = 850)
+ggplot(abcd.data, aes(x=-monitoring,y=thompson_PC2)) +
+  geom_point(colour=cols[4],size=1) +
+  geom_smooth(method=lm,color="black") + xlab("Physical Neglect") + ylab("PC2: Exec. Fxn.") + theme(legend.position = "none") + theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank(),panel.background = element_blank(), axis.line = element_line(colour = "black"))
+dev.off()
+
+ png("/Users/ariellekeller/Documents/Kellernet_PrelimAnalysis/PhysEmoNeglect_ABCD_BHRC/Scatterplots/ABCD_PhysNeg_PC3.png",
+     width = 3000, 
+     height = 3000,
+     res = 850)
+ggplot(abcd.data, aes(x=-monitoring,y=thompson_PC3)) +
+  geom_point(colour=cols[8],size=1) +
+  geom_smooth(method=lm,color="black") + xlab("Physical Neglect") + ylab("PC3: Learning/Memory") + theme(legend.position = "none") + theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank(),panel.background = element_blank(), axis.line = element_line(colour = "black"))
+dev.off()
+
+ png("/Users/ariellekeller/Documents/Kellernet_PrelimAnalysis/PhysEmoNeglect_ABCD_BHRC/Scatterplots/ABCD_EmoNeg_PC1.png",
+     width = 3000, 
+     height = 3000,
+     res = 850)
+ggplot(abcd.data, aes(x=-acceptance,y=thompson_PC1)) +
+  geom_point(colour=cols[2],size=1) +
+  geom_smooth(method=lm,color="black") + xlab("Emotional Neglect") + ylab("PC1: General Cognition") + theme(legend.position = "none") + theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank(),panel.background = element_blank(), axis.line = element_line(colour = "black"))
+dev.off()
+
+ png("/Users/ariellekeller/Documents/Kellernet_PrelimAnalysis/PhysEmoNeglect_ABCD_BHRC/Scatterplots/ABCD_EmoNeg_PC2.png",
+     width = 3000, 
+     height = 3000,
+     res = 850)
+ggplot(abcd.data, aes(x=-acceptance,y=thompson_PC2)) +
+  geom_point(colour=cols[4],size=1) +
+  geom_smooth(method=lm,color="black") + xlab("Emotional Neglect") + ylab("PC2: Exec. Fxn.") + theme(legend.position = "none") + theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank(),panel.background = element_blank(), axis.line = element_line(colour = "black"))
+dev.off()
+
+ png("/Users/ariellekeller/Documents/Kellernet_PrelimAnalysis/PhysEmoNeglect_ABCD_BHRC/Scatterplots/ABCD_EmoNeg_PC3.png",
+     width = 3000, 
+     height = 3000,
+     res = 850)
+ggplot(abcd.data, aes(x=-acceptance,y=thompson_PC3)) +
+  geom_point(colour=cols[8],size=1) +
+  geom_smooth(method=lm,color="black") + xlab("Emotional Neglect") + ylab("PC3: Learning/Memory") + theme(legend.position = "none") + theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank(),panel.background = element_blank(), axis.line = element_line(colour = "black"))
+dev.off()
+```
 
