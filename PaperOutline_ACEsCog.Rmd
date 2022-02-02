@@ -169,17 +169,14 @@ all.data.complete <- all.data.new[(all.data.new$EF>(EF.mean-EF.3sd) & all.data.n
 all.data.complete<-all.data.complete[all.data.complete$fat38a<50,]
 all.data.complete$emo_neglect <- -rowMeans(data.frame(as.numeric(all.data.complete$fat38a)/3,as.numeric(all.data.complete$fat39a)/3),na.rm=TRUE) #,as.numeric(all.data.complete$fes18),as.numeric(all.data.complete$fes1),as.numeric(all.data.complete$fes42),as.numeric(all.data.complete$fes48))
 
-# Verify that correlation is low: it's 0.222
-cor.test(all.data.complete$depriv,all.data.complete$emo_neglect)
 
-# Test specificity
-summary(lmer(EF~age+gender+(1|state)+(1|schoolID)+emo_neglect+depriv,data=all.data.complete)) # both sig
-summary(lmer(WM~age+gender+(1|state)+(1|schoolID)+emo_neglect+depriv,data=all.data.complete)) # both sig
-summary(lmer(TP~age+gender+(1|state)+(1|schoolID)+emo_neglect+depriv,data=all.data.complete)) # both sig 
-summary(lmer(IC~age+gender+(1|state)+(1|schoolID)+emo_neglect+depriv,data=all.data.complete)) # just depriv 
-
-p.adjust(c(0.005610,1.72e-09,0.0030,3.22e-08,0.0111,5.23e-09,0.323230,0.014438),method="bonferroni") 
-
+# # Test specificity
+# summary(lmer(EF~age+gender+(1|state)+(1|schoolID)+emo_neglect+depriv,data=all.data.complete)) # both sig
+# summary(lmer(WM~age+gender+(1|state)+(1|schoolID)+emo_neglect+depriv,data=all.data.complete)) # both sig
+# summary(lmer(TP~age+gender+(1|state)+(1|schoolID)+emo_neglect+depriv,data=all.data.complete)) # both sig 
+# summary(lmer(IC~age+gender+(1|state)+(1|schoolID)+emo_neglect+depriv,data=all.data.complete)) # just depriv 
+# 
+# p.adjust(c(0.005610,1.72e-09,0.0030,3.22e-08,0.0111,5.23e-09,0.323230,0.014438),method="bonferroni") 
 
 
 # try restricting age to ABCD range:
@@ -187,17 +184,47 @@ all.data.complete.ageres <- all.data.complete[all.data.complete$age<11.1,]
 all.data.complete.ageres <- all.data.complete.ageres[all.data.complete.ageres$age>8.9,]
 all.data.complete.ageres<-all.data.complete.ageres[all.data.complete.ageres$fat38a<50,]
 all.data.complete.ageres$emo_neglect <- -rowMeans(data.frame(as.numeric(all.data.complete.ageres$fat38a)/3,as.numeric(all.data.complete.ageres$fat39a)/3),na.rm=TRUE) 
+
+# Verify that correlation is low: it's 0.236
 cor.test(all.data.complete.ageres$depriv,all.data.complete.ageres$emo_neglect)
 
 # Test specificity
-summary(lmer(EF~age+gender+(1|state)+(1|schoolID)+emo_neglect+depriv,data=all.data.complete.ageres)) # both sig
-summary(lmer(WM~age+gender+(1|state)+(1|schoolID)+emo_neglect+depriv,data=all.data.complete.ageres)) # both sig
-summary(lmer(TP~age+gender+(1|state)+(1|schoolID)+emo_neglect+depriv,data=all.data.complete.ageres)) # both sig 
-summary(lmer(IC~age+gender+(1|state)+(1|schoolID)+emo_neglect+depriv,data=all.data.complete.ageres)) # just depriv 
+summary(lmer(EF~age+gender+(1|state)+(1|schoolID)+emo_neglect+depriv,data=all.data.complete.ageres)) # just depriv
+summary(lmer(WM~age+gender+(1|state)+(1|schoolID)+emo_neglect+depriv,data=all.data.complete.ageres)) # just depriv
+summary(lmer(TP~age+gender+(1|state)+(1|schoolID)+emo_neglect+depriv,data=all.data.complete.ageres)) # just depriv
+summary(lmer(IC~age+gender+(1|state)+(1|schoolID)+emo_neglect+depriv,data=all.data.complete.ageres)) # neither 
 
 p.adjust(c(0.0202,3.91e-05,0.0556,1.12e-06,0.020554,0.000262,0.4224,0.0588),method="bonferroni") 
 ```
 
+
+# Get effect sizes
+```{r}
+library("effectsize")
+model1<-anova(lmer(EF~age+gender+(1|state)+(1|schoolID)+emo_neglect+depriv,data=all.data.complete.ageres))
+model2<-anova(lmer(WM~age+gender+(1|state)+(1|schoolID)+emo_neglect+depriv,data=all.data.complete.ageres))
+model3<-anova(lmer(TP~age+gender+(1|state)+(1|schoolID)+emo_neglect+depriv,data=all.data.complete.ageres))
+model4<-anova(lmer(IC~age+gender+(1|state)+(1|schoolID)+emo_neglect+depriv,data=all.data.complete.ageres))
+
+eta2_emo_EF <- F_to_eta2(model1[3,]$`F value`,model1[3,]$NumDF,model1[3,]$DenDF)
+eta2_phy_EF <- F_to_eta2(model1[4,]$`F value`,model1[4,]$NumDF,model1[4,]$DenDF)
+eta2_emo_WM <- F_to_eta2(model2[3,]$`F value`,model2[3,]$NumDF,model2[3,]$DenDF)
+eta2_phy_WM <- F_to_eta2(model2[4,]$`F value`,model2[4,]$NumDF,model2[4,]$DenDF)
+eta2_emo_TP <- F_to_eta2(model3[3,]$`F value`,model3[3,]$NumDF,model3[3,]$DenDF)
+eta2_phy_TP <- F_to_eta2(model3[4,]$`F value`,model3[4,]$NumDF,model3[4,]$DenDF)
+eta2_emo_IC <- F_to_eta2(model4[3,]$`F value`,model4[3,]$NumDF,model4[3,]$DenDF)
+eta2_phy_IC <- F_to_eta2(model4[4,]$`F value`,model4[4,]$NumDF,model4[4,]$DenDF)
+
+eta2_emo_EF[1]
+eta2_phy_EF[1]
+eta2_emo_WM[1]
+eta2_phy_WM[1]
+eta2_emo_TP[1]
+eta2_phy_TP[1]
+eta2_emo_IC[1]
+eta2_phy_IC[1]
+
+```
 
 
 ## Create a correlation matrix of all the important variables
@@ -254,7 +281,7 @@ dev.off()
      height = 3000,
      res = 850)
 ggplot(all.data.complete.ageres, aes(x=emo_neglect,y=TP)) +
-  geom_point(colour=cols[2],size=1) +
+  geom_point(position="jitter",colour=cols[2],size=1) +
   geom_smooth(method=lm,color="black") + xlab("Emotional Neglect") + ylab("Temporal Processing") + theme(legend.position = "none") + theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank(),panel.background = element_blank(), axis.line = element_line(colour = "black"))
 dev.off()
 
@@ -263,7 +290,7 @@ dev.off()
      height = 3000,
      res = 850)
 ggplot(all.data.complete.ageres, aes(x=emo_neglect,y=EF)) +
-  geom_point(colour=cols[4],size=1) +
+  geom_point(position="jitter",colour=cols[4],size=1) +
   geom_smooth(method=lm,color="black") + xlab("Emotional Neglect") + ylab("Exec. Fxn.") + theme(legend.position = "none") + theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank(),panel.background = element_blank(), axis.line = element_line(colour = "black"))
 dev.off()
 
@@ -272,7 +299,7 @@ dev.off()
      height = 3000,
      res = 850)
 ggplot(all.data.complete.ageres, aes(x=emo_neglect,y=WM)) +
-  geom_point(colour=cols[8],size=1) +
+  geom_point(position="jitter",colour=cols[8],size=1) +
   geom_smooth(method=lm,color="black") + xlab("Emotional Neglect") + ylab("Working Memory") + theme(legend.position = "none") + theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank(),panel.background = element_blank(), axis.line = element_line(colour = "black"))
 dev.off()
 
@@ -281,10 +308,39 @@ dev.off()
      height = 3000,
      res = 850)
 ggplot(all.data.complete.ageres, aes(x=emo_neglect,y=IC)) +
-  geom_point(colour=cols[10],size=1) +
+  geom_point(position="jitter",colour=cols[10],size=1) +
   geom_smooth(method=lm,color="black") + xlab("Emotional Neglect") + ylab("Inhibitory Control") + theme(legend.position = "none") + theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank(),panel.background = element_blank(), axis.line = element_line(colour = "black"))
 dev.off()
 ```
+
+# Demographics info
+```{r}
+# Gender (1, Male|2, Female)
+sum(all.data.complete.ageres$gender==1,na.rm=TRUE)
+round(sum(all.data.complete.ageres$gender==1,na.rm=TRUE)/dim(all.data.complete.ageres)[1],2)
+sum(all.data.complete.ageres$gender==2,na.rm=TRUE)
+round(sum(all.data.complete.ageres$gender==2,na.rm=TRUE)/dim(all.data.complete.ageres)[1],2)
+
+# Skin Color (1, White | 2, Black | 3, Between white and black (brown) | 4, Indigenous | 5, Asian | 99, Does not know)
+sum(all.data.complete.ageres$skincolor==1,na.rm=TRUE)
+round(sum(all.data.complete.ageres$skincolor==1,na.rm=TRUE)/dim(all.data.complete.ageres)[1],2)
+sum(all.data.complete.ageres$skincolor==2,na.rm=TRUE)
+round(sum(all.data.complete.ageres$skincolor==2,na.rm=TRUE)/dim(all.data.complete.ageres)[1],2)
+sum(all.data.complete.ageres$skincolor==3,na.rm=TRUE)
+round(sum(all.data.complete.ageres$skincolor==3,na.rm=TRUE)/dim(all.data.complete.ageres)[1],2)
+sum(all.data.complete.ageres$skincolor==4,na.rm=TRUE)
+round(sum(all.data.complete.ageres$skincolor==4,na.rm=TRUE)/dim(all.data.complete.ageres)[1],2)
+sum(all.data.complete.ageres$skincolor==5,na.rm=TRUE)
+round(sum(all.data.complete.ageres$skincolor==5,na.rm=TRUE)/dim(all.data.complete.ageres)[1],2)
+
+# How far did the head of the family study?
+# 99, Does not know|1, Without study (illiterate)|2, Elementary school incomplete (did not finish the former 8th grade)|3, Elementary school completed (finished the former 8th grade)|4, Incomplete high school (did not finish the former high school)|5, High school (finished the former high school)|6, Incomplete higher education (did not finish college)|7, Higher education (finished college)|8, Higher education with postgraduate studies (master's / doctorate / specialization)
+
+# NOTE: get ab6 variable for this ^ from the scale dom_s06_treat_w0w2
+```
+
+
+
 
 
 ## ~~~~~~~~ ABCD ~~~~~~~~
@@ -455,6 +511,169 @@ summary(lmer(thompson_PC3~interview_age+sex+(1|rel_family_id)+(1|abcd_site)+acce
 # summary(lmer(thompson_PC3~interview_age+sex+(1|rel_family_id)+acceptance.binary+monitoring.binary+abuse.binary+trauma.binary,data=abcd.data))
 # p.adjust(c(0.034, 2e-16,0.014,6.18e-8),method="bonferroni")
 # # PC3 is related to physical neglect *** and trauma ***
+
+
+## Separate models for physical and emotional neglect:
+summary(lmer(thompson_PC1~interview_age+sex+(1|rel_family_id)+(1|abcd_site)+monitoring,data=abcd.data)) # ***
+summary(lmer(thompson_PC2~interview_age+sex+(1|rel_family_id)+(1|abcd_site)+monitoring,data=abcd.data)) # ***
+summary(lmer(thompson_PC3~interview_age+sex+(1|rel_family_id)+(1|abcd_site)+monitoring,data=abcd.data)) # ***
+summary(lmer(thompson_PC1~interview_age+sex+(1|rel_family_id)+(1|abcd_site)+acceptance,data=abcd.data)) # **
+summary(lmer(thompson_PC2~interview_age+sex+(1|rel_family_id)+(1|abcd_site)+acceptance,data=abcd.data)) # .
+summary(lmer(thompson_PC3~interview_age+sex+(1|rel_family_id)+(1|abcd_site)+acceptance,data=abcd.data)) # **
+```
+
+# Get effect sizes
+```{r}
+library("effectsize")
+model1<-anova(lmer(thompson_PC1~interview_age+sex+(1|rel_family_id)+(1|abcd_site)+acceptance+monitoring,data=abcd.data))
+model2<-anova(lmer(thompson_PC2~interview_age+sex+(1|rel_family_id)+(1|abcd_site)+acceptance+monitoring,data=abcd.data))
+model3<-anova(lmer(thompson_PC3~interview_age+sex+(1|rel_family_id)+(1|abcd_site)+acceptance+monitoring,data=abcd.data))
+
+eta2_emo_PC1 <- F_to_eta2(model1[3,]$`F value`,model1[3,]$NumDF,model1[3,]$DenDF)
+eta2_phy_PC1 <- F_to_eta2(model1[4,]$`F value`,model1[4,]$NumDF,model1[4,]$DenDF)
+eta2_emo_PC2 <- F_to_eta2(model2[3,]$`F value`,model2[3,]$NumDF,model2[3,]$DenDF)
+eta2_phy_PC2 <- F_to_eta2(model2[4,]$`F value`,model2[4,]$NumDF,model2[4,]$DenDF)
+eta2_emo_PC3 <- F_to_eta2(model3[3,]$`F value`,model3[3,]$NumDF,model3[3,]$DenDF)
+eta2_phy_PC3 <- F_to_eta2(model3[4,]$`F value`,model3[4,]$NumDF,model3[4,]$DenDF)
+
+eta2_emo_PC1[1]
+eta2_phy_PC1[1]
+eta2_emo_PC2[1]
+eta2_phy_PC2[1]
+eta2_emo_PC3[1]
+eta2_phy_PC3[1]
+
+
+# effect sizes for separate models of physical and emotional neglect:
+model1<-anova(lmer(thompson_PC1~interview_age+sex+(1|rel_family_id)+(1|abcd_site)+monitoring,data=abcd.data))
+model2<-anova(lmer(thompson_PC2~interview_age+sex+(1|rel_family_id)+(1|abcd_site)+monitoring,data=abcd.data))
+model3<-anova(lmer(thompson_PC3~interview_age+sex+(1|rel_family_id)+(1|abcd_site)+monitoring,data=abcd.data))
+model4<-anova(lmer(thompson_PC1~interview_age+sex+(1|rel_family_id)+(1|abcd_site)+acceptance,data=abcd.data))
+model5<-anova(lmer(thompson_PC2~interview_age+sex+(1|rel_family_id)+(1|abcd_site)+acceptance,data=abcd.data))
+model6<-anova(lmer(thompson_PC3~interview_age+sex+(1|rel_family_id)+(1|abcd_site)+acceptance,data=abcd.data))
+
+eta2_emo_PC1 <- F_to_eta2(model4[3,]$`F value`,model1[3,]$NumDF,model1[3,]$DenDF)
+eta2_phy_PC1 <- F_to_eta2(model1[3,]$`F value`,model1[3,]$NumDF,model1[3,]$DenDF)
+eta2_emo_PC2 <- F_to_eta2(model5[3,]$`F value`,model2[3,]$NumDF,model2[3,]$DenDF)
+eta2_phy_PC2 <- F_to_eta2(model2[3,]$`F value`,model2[3,]$NumDF,model2[3,]$DenDF)
+eta2_emo_PC3 <- F_to_eta2(model6[3,]$`F value`,model3[3,]$NumDF,model3[3,]$DenDF)
+eta2_phy_PC3 <- F_to_eta2(model3[3,]$`F value`,model3[3,]$NumDF,model3[3,]$DenDF)
+
+eta2_emo_PC1[1]
+eta2_phy_PC1[1]
+eta2_emo_PC2[1]
+eta2_phy_PC2[1]
+eta2_emo_PC3[1]
+eta2_phy_PC3[1]
+
+
+
+```
+
+### Look at specific items within parental warmth and parental monitoring:
+```{r}
+abcd.data$crpbi_parent1_y<-as.numeric(abcd.data$crpbi_parent1_y)
+abcd.data$crpbi_parent2_y<-as.numeric(abcd.data$crpbi_parent2_y)
+abcd.data$crpbi_parent3_y<-as.numeric(abcd.data$crpbi_parent3_y)
+abcd.data$crpbi_parent4_y<-as.numeric(abcd.data$crpbi_parent4_y)
+abcd.data$crpbi_parent5_y<-as.numeric(abcd.data$crpbi_parent5_y)
+abcd.data$parent_monitor_q1_y<-as.numeric(abcd.data$parent_monitor_q1_y)
+abcd.data$parent_monitor_q2_y<-as.numeric(abcd.data$parent_monitor_q2_y)
+abcd.data$parent_monitor_q3_y<-as.numeric(abcd.data$parent_monitor_q3_y)
+abcd.data$parent_monitor_q4_y<-as.numeric(abcd.data$parent_monitor_q4_y)
+abcd.data$parent_monitor_q5_y<-as.numeric(abcd.data$parent_monitor_q5_y)
+
+
+important.variables3 <- abcd.data[,c("crpbi_parent1_y","crpbi_parent2_y","crpbi_parent3_y","crpbi_parent4_y","crpbi_parent5_y")]
+colnames(important.variables3)<-c("Feel better talking worries","Smiles at me","Feel better when upset","Shows love","Easy to talk to")
+corrplot(cor(important.variables3,use="complete.obs"),method=c("number"), tl.col = "black", col=brewer.pal(n=8, name="Spectral"))
+
+important.variables4 <- abcd.data[,c("parent_monitor_q1_y","parent_monitor_q2_y","parent_monitor_q3_y","parent_monitor_q4_y","parent_monitor_q5_y")]
+colnames(important.variables4)<-c("Know where you are","Know who you're with","Know how to contact","Talk over plans","Dinner together")
+corrplot(cor(important.variables4,use="complete.obs"),method=c("number"), tl.col = "black", col=brewer.pal(n=8, name="Spectral"))
+
+summary(lmer(thompson_PC1~interview_age+sex+(1|rel_family_id)+(1|abcd_site)+parent_monitor_q1_y+parent_monitor_q2_y+parent_monitor_q3_y+parent_monitor_q4_y+parent_monitor_q5_y,data=abcd.data)) # all significant *** (Q4 opp direction)
+summary(lmer(thompson_PC2~interview_age+sex+(1|rel_family_id)+(1|abcd_site)+parent_monitor_q1_y+parent_monitor_q2_y+parent_monitor_q3_y+parent_monitor_q4_y+parent_monitor_q5_y,data=abcd.data)) # all but Q3 sig (Q4 opp direction)
+summary(lmer(thompson_PC3~interview_age+sex+(1|rel_family_id)+(1|abcd_site)+parent_monitor_q1_y+parent_monitor_q2_y+parent_monitor_q3_y+parent_monitor_q4_y+parent_monitor_q5_y,data=abcd.data)) # all significant (Q4 opp direction)
+summary(lmer(thompson_PC1~interview_age+sex+(1|rel_family_id)+(1|abcd_site)+crpbi_parent1_y+crpbi_parent2_y+crpbi_parent3_y+crpbi_parent4_y+crpbi_parent5_y,data=abcd.data)) # Q2, Q4, Q5 significant (Q5 opp direction)
+summary(lmer(thompson_PC2~interview_age+sex+(1|rel_family_id)+(1|abcd_site)+crpbi_parent1_y+crpbi_parent2_y+crpbi_parent3_y+crpbi_parent4_y+crpbi_parent5_y,data=abcd.data)) # Q2, Q4, Q5 significant (Q5 opp direction)
+summary(lmer(thompson_PC3~interview_age+sex+(1|rel_family_id)+(1|abcd_site)+crpbi_parent1_y+crpbi_parent2_y+crpbi_parent3_y+crpbi_parent4_y+crpbi_parent5_y,data=abcd.data)) # Q2, Q4, Q5 significant (Q5 opp direction)
+
+```
+
+
+# look for mediation: SES --> caregiving --> cognition
+```{r}
+summary(lmer(thompson_PC1~interview_age+sex+(1|rel_family_id)+(1|abcd_site)+monitoring,data=abcd.data))
+summary(lmer(thompson_PC1~interview_age+sex+(1|rel_family_id)+(1|abcd_site)+household.income,data=abcd.data))
+summary(lmer(thompson_PC1~interview_age+sex+(1|rel_family_id)+(1|abcd_site)+household.income+monitoring,data=abcd.data))
+# partial mediation!
+
+summary(lmer(thompson_PC2~interview_age+sex+(1|rel_family_id)+(1|abcd_site)+monitoring,data=abcd.data))
+summary(lmer(thompson_PC2~interview_age+sex+(1|rel_family_id)+(1|abcd_site)+household.income,data=abcd.data))
+summary(lmer(thompson_PC2~interview_age+sex+(1|rel_family_id)+(1|abcd_site)+household.income+monitoring,data=abcd.data))
+# partial mediation!
+
+summary(lmer(thompson_PC3~interview_age+sex+(1|rel_family_id)+(1|abcd_site)+monitoring,data=abcd.data))
+summary(lmer(thompson_PC3~interview_age+sex+(1|rel_family_id)+(1|abcd_site)+household.income,data=abcd.data))
+summary(lmer(thompson_PC3~interview_age+sex+(1|rel_family_id)+(1|abcd_site)+household.income+monitoring,data=abcd.data))
+# partial mediation!
+
+
+
+# Simplify household income variable:
+abcd.data$household.income.simple <- ifelse(abcd.data$household.income=="[>=100K]",1,0)
+
+summary(lmer(thompson_PC1~interview_age+sex+(1|rel_family_id)+(1|abcd_site)+monitoring,data=abcd.data))
+summary(lmer(thompson_PC1~interview_age+sex+(1|rel_family_id)+(1|abcd_site)+household.income.simple,data=abcd.data))
+summary(lmer(thompson_PC1~interview_age+sex+(1|rel_family_id)+(1|abcd_site)+household.income.simple+monitoring,data=abcd.data))
+# partial mediation!
+
+summary(lmer(thompson_PC2~interview_age+sex+(1|rel_family_id)+(1|abcd_site)+monitoring,data=abcd.data))
+summary(lmer(thompson_PC2~interview_age+sex+(1|rel_family_id)+(1|abcd_site)+household.income.simple,data=abcd.data))
+summary(lmer(thompson_PC2~interview_age+sex+(1|rel_family_id)+(1|abcd_site)+household.income.simple+monitoring,data=abcd.data))
+# partial mediation!
+
+summary(lmer(thompson_PC3~interview_age+sex+(1|rel_family_id)+(1|abcd_site)+monitoring,data=abcd.data))
+summary(lmer(thompson_PC3~interview_age+sex+(1|rel_family_id)+(1|abcd_site)+household.income.simple,data=abcd.data))
+summary(lmer(thompson_PC3~interview_age+sex+(1|rel_family_id)+(1|abcd_site)+household.income.simple+monitoring,data=abcd.data))
+# partial mediation!
+
+
+
+# Test for significance of mediation models with bootstrapping
+bs_indir = c()
+for (i in 1:10){
+  thisSample <- sample(c(1:dim(abcd.data)[1]),dim(abcd.data)[1],replace=TRUE)
+  pathc<-summary(lmer(thompson_PC1~interview_age+sex+(1|rel_family_id)+(1|abcd_site)+household.income.simple,data=abcd.data[thisSample,]))
+  pathcp<-summary(lmer(thompson_PC1~interview_age+sex+(1|rel_family_id)+(1|abcd_site)+household.income.simple+monitoring,data=abcd.data[thisSample,]))
+  indir<-pathc$coefficients[4]-pathcp$coefficients[5]
+  bs_indir <- c(bs_indir,indir)
+}
+t.test(bs_indir,conf.level=0.95)
+## Significant partial mediation
+
+bs_indir = c()
+for (i in 1:10){
+  thisSample <- sample(c(1:dim(abcd.data)[1]),dim(abcd.data)[1],replace=TRUE)
+  pathc<-summary(lmer(thompson_PC2~interview_age+sex+(1|rel_family_id)+(1|abcd_site)+household.income.simple,data=abcd.data[thisSample,]))
+  pathcp<-summary(lmer(thompson_PC2~interview_age+sex+(1|rel_family_id)+(1|abcd_site)+household.income.simple+monitoring,data=abcd.data[thisSample,]))
+  indir<-pathc$coefficients[4]-pathcp$coefficients[5]
+  bs_indir <- c(bs_indir,indir)
+}
+t.test(bs_indir,conf.level=0.95)
+## Significant partial mediation
+
+bs_indir = c()
+for (i in 1:10){
+  thisSample <- sample(c(1:dim(abcd.data)[1]),dim(abcd.data)[1],replace=TRUE)
+  pathc<-summary(lmer(thompson_PC3~interview_age+sex+(1|rel_family_id)+(1|abcd_site)+household.income.simple,data=abcd.data[thisSample,]))
+  pathcp<-summary(lmer(thompson_PC3~interview_age+sex+(1|rel_family_id)+(1|abcd_site)+household.income.simple+monitoring,data=abcd.data[thisSample,]))
+  indir<-pathc$coefficients[4]-pathcp$coefficients[5]
+  bs_indir <- c(bs_indir,indir)
+}
+t.test(bs_indir,conf.level=0.95)
+## Significant partial mediation
 ```
 
 
@@ -507,7 +726,7 @@ cols <- brewer.pal(10,"Paired")
      height = 3000,
      res = 850)
 ggplot(abcd.data, aes(x=-monitoring,y=thompson_PC1)) +
-  geom_point(colour=cols[2],size=1) +
+  geom_point(position="jitter",colour=cols[2],size=1) +
   geom_smooth(method=lm,color="black") + xlab("Physical Neglect") + ylab("PC1: General Cognition") + theme(legend.position = "none") + theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank(),panel.background = element_blank(), axis.line = element_line(colour = "black"))
 dev.off()
 
@@ -516,7 +735,7 @@ dev.off()
      height = 3000,
      res = 850)
 ggplot(abcd.data, aes(x=-monitoring,y=thompson_PC2)) +
-  geom_point(colour=cols[4],size=1) +
+  geom_point(position="jitter",colour=cols[4],size=1) +
   geom_smooth(method=lm,color="black") + xlab("Physical Neglect") + ylab("PC2: Exec. Fxn.") + theme(legend.position = "none") + theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank(),panel.background = element_blank(), axis.line = element_line(colour = "black"))
 dev.off()
 
@@ -525,7 +744,7 @@ dev.off()
      height = 3000,
      res = 850)
 ggplot(abcd.data, aes(x=-monitoring,y=thompson_PC3)) +
-  geom_point(colour=cols[8],size=1) +
+  geom_point(position="jitter",colour=cols[8],size=1) +
   geom_smooth(method=lm,color="black") + xlab("Physical Neglect") + ylab("PC3: Learning/Memory") + theme(legend.position = "none") + theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank(),panel.background = element_blank(), axis.line = element_line(colour = "black"))
 dev.off()
 
@@ -534,7 +753,7 @@ dev.off()
      height = 3000,
      res = 850)
 ggplot(abcd.data, aes(x=-acceptance,y=thompson_PC1)) +
-  geom_point(colour=cols[2],size=1) +
+  geom_point(position="jitter",colour=cols[2],size=1) +
   geom_smooth(method=lm,color="black") + xlab("Emotional Neglect") + ylab("PC1: General Cognition") + theme(legend.position = "none") + theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank(),panel.background = element_blank(), axis.line = element_line(colour = "black"))
 dev.off()
 
@@ -543,7 +762,7 @@ dev.off()
      height = 3000,
      res = 850)
 ggplot(abcd.data, aes(x=-acceptance,y=thompson_PC2)) +
-  geom_point(colour=cols[4],size=1) +
+  geom_point(position="jitter",colour=cols[4],size=1) +
   geom_smooth(method=lm,color="black") + xlab("Emotional Neglect") + ylab("PC2: Exec. Fxn.") + theme(legend.position = "none") + theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank(),panel.background = element_blank(), axis.line = element_line(colour = "black"))
 dev.off()
 
@@ -552,8 +771,172 @@ dev.off()
      height = 3000,
      res = 850)
 ggplot(abcd.data, aes(x=-acceptance,y=thompson_PC3)) +
-  geom_point(colour=cols[8],size=1) +
+  geom_point(position="jitter",colour=cols[8],size=1) +
   geom_smooth(method=lm,color="black") + xlab("Emotional Neglect") + ylab("PC3: Learning/Memory") + theme(legend.position = "none") + theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank(),panel.background = element_blank(), axis.line = element_line(colour = "black"))
 dev.off()
+```
+
+# Sandbox to test some covariates in ABCD
+```{r}
+
+# Race/Ethnicity (1 = White; 2 = Black; 3 = Hispanic; 4 = Asian; 5 = Other)
+summary(lmer(thompson_PC1~interview_age+sex+(1|rel_family_id)+(1|abcd_site)+race_ethnicity+acceptance+monitoring,data=abcd.data))
+summary(lmer(thompson_PC2~interview_age+sex+(1|rel_family_id)+(1|abcd_site)+race_ethnicity+acceptance+monitoring,data=abcd.data))
+summary(lmer(thompson_PC3~interview_age+sex+(1|rel_family_id)+(1|abcd_site)+race_ethnicity+acceptance+monitoring,data=abcd.data))
+
+# Race 6 level (1: White | 2: Black | 3: Asian | 4: AIAN/NHPI | 5: Other | 6: Mixed)
+summary(lmer(thompson_PC1~interview_age+sex+(1|rel_family_id)+(1|abcd_site)+race.6level+acceptance+monitoring,data=abcd.data))
+summary(lmer(thompson_PC2~interview_age+sex+(1|rel_family_id)+(1|abcd_site)+race.6level+acceptance+monitoring,data=abcd.data))
+summary(lmer(thompson_PC3~interview_age+sex+(1|rel_family_id)+(1|abcd_site)+race.6level+acceptance+monitoring,data=abcd.data))
+
+# Language/Reading ability
+summary(lmer(thompson_PC1~interview_age+sex+(1|rel_family_id)+(1|abcd_site)+as.numeric(nihtbx_reading_agecorrected)+acceptance+monitoring,data=abcd.data))
+summary(lmer(thompson_PC2~interview_age+sex+(1|rel_family_id)+(1|abcd_site)+as.numeric(nihtbx_reading_agecorrected)+race_ethnicity+acceptance+monitoring,data=abcd.data))
+summary(lmer(thompson_PC3~interview_age+sex+(1|rel_family_id)+(1|abcd_site)+as.numeric(nihtbx_reading_agecorrected)+race_ethnicity+acceptance+monitoring,data=abcd.data))
+
+# Parent's highest degree of education
+summary(lmer(thompson_PC1~interview_age+sex+(1|rel_family_id)+(1|abcd_site)+high.educ+acceptance+monitoring,data=abcd.data))
+summary(lmer(thompson_PC2~interview_age+sex+(1|rel_family_id)+(1|abcd_site)+high.educ+acceptance+monitoring,data=abcd.data))
+summary(lmer(thompson_PC3~interview_age+sex+(1|rel_family_id)+(1|abcd_site)+high.educ+acceptance+monitoring,data=abcd.data))
+
+# Household income
+summary(lmer(thompson_PC1~interview_age+sex+(1|rel_family_id)+(1|abcd_site)+household.income+acceptance+monitoring,data=abcd.data))
+summary(lmer(thompson_PC2~interview_age+sex+(1|rel_family_id)+(1|abcd_site)+household.income+acceptance+monitoring,data=abcd.data))
+summary(lmer(thompson_PC3~interview_age+sex+(1|rel_family_id)+(1|abcd_site)+household.income+acceptance+monitoring,data=abcd.data))
+
+
+
+```
+
+# Get demographics info
+```{r}
+abcd.data.noNA2 <- abcd.data[!is.na(abcd.data$acceptance),]
+abcd.data.noNA <- abcd.data.noNA2[!is.na(abcd.data.noNA2$monitoring),]
+
+sum(abcd.data.noNA$household.income=="[<50K]",na.rm=TRUE)
+mean(abcd.data.noNA[abcd.data.noNA$household.income=="[<50K]",]$acceptance,na.rm=TRUE)
+sd(abcd.data.noNA[abcd.data.noNA$household.income=="[<50K]",]$acceptance,na.rm=TRUE)
+mean(abcd.data.noNA[abcd.data.noNA$household.income=="[<50K]",]$monitoring,na.rm=TRUE)
+sd(abcd.data.noNA[abcd.data.noNA$household.income=="[<50K]",]$monitoring,na.rm=TRUE)
+
+sum(abcd.data.noNA$household.income=="[>=50K & <100K]",na.rm=TRUE)
+mean(abcd.data.noNA[abcd.data.noNA$household.income=="[>=50K & <100K]",]$acceptance,na.rm=TRUE)
+sd(abcd.data.noNA[abcd.data.noNA$household.income=="[>=50K & <100K]",]$acceptance,na.rm=TRUE)
+mean(abcd.data.noNA[abcd.data.noNA$household.income=="[>=50K & <100K]",]$monitoring,na.rm=TRUE)
+sd(abcd.data.noNA[abcd.data.noNA$household.income=="[>=50K & <100K]",]$monitoring,na.rm=TRUE)
+
+sum(abcd.data.noNA$household.income=="[>=100K]",na.rm=TRUE)
+mean(abcd.data.noNA[abcd.data.noNA$household.income=="[>=100K]",]$acceptance,na.rm=TRUE)
+sd(abcd.data.noNA[abcd.data.noNA$household.income=="[>=100K]",]$acceptance,na.rm=TRUE)
+mean(abcd.data.noNA[abcd.data.noNA$household.income=="[>=100K]",]$monitoring,na.rm=TRUE)
+sd(abcd.data.noNA[abcd.data.noNA$household.income=="[>=100K]",]$monitoring,na.rm=TRUE)
+
+summary(aov(acceptance~household.income,data=abcd.data.noNA)) # ***
+
+sum(abcd.data.noNA$high.educ=="< HS Diploma",na.rm=TRUE)
+mean(abcd.data.noNA[abcd.data.noNA$high.educ=="< HS Diploma",]$acceptance,na.rm=TRUE)
+sd(abcd.data.noNA[abcd.data.noNA$high.educ=="< HS Diploma",]$acceptance,na.rm=TRUE)
+mean(abcd.data.noNA[abcd.data.noNA$high.educ=="< HS Diploma",]$monitoring,na.rm=TRUE)
+sd(abcd.data.noNA[abcd.data.noNA$high.educ=="< HS Diploma",]$monitoring,na.rm=TRUE)
+
+sum(abcd.data.noNA$high.educ=="HS Diploma/GED",na.rm=TRUE)
+mean(abcd.data.noNA[abcd.data.noNA$high.educ=="HS Diploma/GED",]$acceptance,na.rm=TRUE)
+sd(abcd.data.noNA[abcd.data.noNA$high.educ=="HS Diploma/GED",]$acceptance,na.rm=TRUE)
+mean(abcd.data.noNA[abcd.data.noNA$high.educ=="HS Diploma/GED",]$monitoring,na.rm=TRUE)
+sd(abcd.data.noNA[abcd.data.noNA$high.educ=="HS Diploma/GED",]$monitoring,na.rm=TRUE)
+
+sum(abcd.data.noNA$high.educ=="Some College",na.rm=TRUE)
+mean(abcd.data.noNA[abcd.data.noNA$high.educ=="Some College",]$acceptance,na.rm=TRUE)
+sd(abcd.data.noNA[abcd.data.noNA$high.educ=="Some College",]$acceptance,na.rm=TRUE)
+mean(abcd.data.noNA[abcd.data.noNA$high.educ=="Some College",]$monitoring,na.rm=TRUE)
+sd(abcd.data.noNA[abcd.data.noNA$high.educ=="Some College",]$monitoring,na.rm=TRUE)
+
+sum(abcd.data.noNA$high.educ=="Bachelor",na.rm=TRUE)
+mean(abcd.data.noNA[abcd.data.noNA$high.educ=="Bachelor",]$acceptance,na.rm=TRUE)
+sd(abcd.data.noNA[abcd.data.noNA$high.educ=="Bachelor",]$acceptance,na.rm=TRUE)
+mean(abcd.data.noNA[abcd.data.noNA$high.educ=="Bachelor",]$monitoring,na.rm=TRUE)
+sd(abcd.data.noNA[abcd.data.noNA$high.educ=="Bachelor",]$monitoring,na.rm=TRUE)
+
+sum(abcd.data.noNA$high.educ=="Post Graduate Degree",na.rm=TRUE)
+mean(abcd.data.noNA[abcd.data.noNA$high.educ=="Post Graduate Degree",]$acceptance,na.rm=TRUE)
+sd(abcd.data.noNA[abcd.data.noNA$high.educ=="Post Graduate Degree",]$acceptance,na.rm=TRUE)
+mean(abcd.data.noNA[abcd.data.noNA$high.educ=="Post Graduate Degree",]$monitoring,na.rm=TRUE)
+sd(abcd.data.noNA[abcd.data.noNA$high.educ=="Post Graduate Degree",]$monitoring,na.rm=TRUE)
+
+summary(aov(acceptance~high.educ,data=abcd.data.noNA)) # ***
+
+#(1 = White; 2 = Black; 3 = Hispanic; 4 = Asian; 5 = Other)
+sum(abcd.data.noNA$race_ethnicity=="1",na.rm=TRUE)
+round(mean(abcd.data.noNA[abcd.data.noNA$race_ethnicity=="1",]$acceptance,na.rm=TRUE),2)
+round(sd(abcd.data.noNA[abcd.data.noNA$race_ethnicity=="1",]$acceptance,na.rm=TRUE),2)
+round(mean(abcd.data.noNA[abcd.data.noNA$race_ethnicity=="1",]$monitoring,na.rm=TRUE),2)
+round(sd(abcd.data.noNA[abcd.data.noNA$race_ethnicity=="1",]$monitoring,na.rm=TRUE),2)
+
+sum(abcd.data.noNA$race_ethnicity=="2",na.rm=TRUE)
+round(mean(abcd.data.noNA[abcd.data.noNA$race_ethnicity=="2",]$acceptance,na.rm=TRUE),2)
+round(sd(abcd.data.noNA[abcd.data.noNA$race_ethnicity=="2",]$acceptance,na.rm=TRUE),2)
+round(mean(abcd.data.noNA[abcd.data.noNA$race_ethnicity=="2",]$monitoring,na.rm=TRUE),2)
+round(sd(abcd.data.noNA[abcd.data.noNA$race_ethnicity=="2",]$monitoring,na.rm=TRUE),2)
+
+sum(abcd.data.noNA$race_ethnicity=="3",na.rm=TRUE)
+round(mean(abcd.data.noNA[abcd.data.noNA$race_ethnicity=="3",]$acceptance,na.rm=TRUE),2)
+round(sd(abcd.data.noNA[abcd.data.noNA$race_ethnicity=="3",]$acceptance,na.rm=TRUE),2)
+round(mean(abcd.data.noNA[abcd.data.noNA$race_ethnicity=="3",]$monitoring,na.rm=TRUE),2)
+round(sd(abcd.data.noNA[abcd.data.noNA$race_ethnicity=="3",]$monitoring,na.rm=TRUE),2)
+
+sum(abcd.data.noNA$race_ethnicity=="4",na.rm=TRUE)
+round(mean(abcd.data.noNA[abcd.data.noNA$race_ethnicity=="4",]$acceptance,na.rm=TRUE),2)
+round(sd(abcd.data.noNA[abcd.data.noNA$race_ethnicity=="4",]$acceptance,na.rm=TRUE),2)
+round(mean(abcd.data.noNA[abcd.data.noNA$race_ethnicity=="4",]$monitoring,na.rm=TRUE),2)
+round(sd(abcd.data.noNA[abcd.data.noNA$race_ethnicity=="4",]$monitoring,na.rm=TRUE),2)
+
+sum(abcd.data.noNA$race_ethnicity=="5",na.rm=TRUE)
+round(mean(abcd.data.noNA[abcd.data.noNA$race_ethnicity=="5",]$acceptance,na.rm=TRUE),2)
+round(sd(abcd.data.noNA[abcd.data.noNA$race_ethnicity=="5",]$acceptance,na.rm=TRUE),2)
+round(mean(abcd.data.noNA[abcd.data.noNA$race_ethnicity=="5",]$monitoring,na.rm=TRUE),2)
+round(sd(abcd.data.noNA[abcd.data.noNA$race_ethnicity=="5",]$monitoring,na.rm=TRUE),2)
+
+
+sum(abcd.data.noNA$sex=="F",na.rm=TRUE)
+round(mean(abcd.data.noNA[abcd.data.noNA$sex=="F",]$acceptance,na.rm=TRUE),2)
+round(sd(abcd.data.noNA[abcd.data.noNA$sex=="F",]$acceptance,na.rm=TRUE),2)
+round(mean(abcd.data.noNA[abcd.data.noNA$sex=="F",]$monitoring,na.rm=TRUE),2)
+round(sd(abcd.data.noNA[abcd.data.noNA$sex=="F",]$monitoring,na.rm=TRUE),2)
+
+sum(abcd.data.noNA$sex=="M",na.rm=TRUE)
+round(mean(abcd.data.noNA[abcd.data.noNA$sex=="M",]$acceptance,na.rm=TRUE),2)
+round(sd(abcd.data.noNA[abcd.data.noNA$sex=="M",]$acceptance,na.rm=TRUE),2)
+round(mean(abcd.data.noNA[abcd.data.noNA$sex=="M",]$monitoring,na.rm=TRUE),2)
+round(sd(abcd.data.noNA[abcd.data.noNA$sex=="M",]$monitoring,na.rm=TRUE),2)
+```
+
+
+
+# Repeat of all analyses within each race category separately:
+```{r}
+# Race 6 level (1: White | 2: Black | 3: Asian | 4: AIAN/NHPI | 5: Other | 6: Mixed)
+summary(lmer(thompson_PC1~interview_age+sex+(1|rel_family_id)+(1|abcd_site)+acceptance+monitoring,data=abcd.data[abcd.data$race.6level=="Black",]))
+summary(lmer(thompson_PC2~interview_age+sex+(1|rel_family_id)+(1|abcd_site)+acceptance+monitoring,data=abcd.data[abcd.data$race.6level=="Black",])) # does not replicate
+summary(lmer(thompson_PC3~interview_age+sex+(1|rel_family_id)+(1|abcd_site)+acceptance+monitoring,data=abcd.data[abcd.data$race.6level=="Black",])) # does not replicate
+
+summary(lmer(thompson_PC1~interview_age+sex+(1|rel_family_id)+(1|abcd_site)+acceptance+monitoring,data=abcd.data[abcd.data$race.6level=="White",]))
+summary(lmer(thompson_PC2~interview_age+sex+(1|rel_family_id)+(1|abcd_site)+acceptance+monitoring,data=abcd.data[abcd.data$race.6level=="White",]))
+summary(lmer(thompson_PC3~interview_age+sex+(1|rel_family_id)+(1|abcd_site)+acceptance+monitoring,data=abcd.data[abcd.data$race.6level=="White",]))
+
+summary(lmer(thompson_PC1~interview_age+sex+(1|rel_family_id)+(1|abcd_site)+acceptance+monitoring,data=abcd.data[abcd.data$race.6level=="Asian",]))
+summary(lmer(thompson_PC2~interview_age+sex+(1|rel_family_id)+(1|abcd_site)+acceptance+monitoring,data=abcd.data[abcd.data$race.6level=="Asian",])) # does not replicate
+summary(lmer(thompson_PC3~interview_age+sex+(1|rel_family_id)+(1|abcd_site)+acceptance+monitoring,data=abcd.data[abcd.data$race.6level=="Asian",])) # does not replicate
+
+summary(lmer(thompson_PC1~interview_age+sex+(1|rel_family_id)+(1|abcd_site)+acceptance+monitoring,data=abcd.data[abcd.data$race.6level=="AIAN/NHPI",])) # not enough subjects
+summary(lmer(thompson_PC2~interview_age+sex+(1|rel_family_id)+(1|abcd_site)+acceptance+monitoring,data=abcd.data[abcd.data$race.6level=="AIAN/NHPI",])) # not enough subjects
+summary(lmer(thompson_PC3~interview_age+sex+(1|rel_family_id)+(1|abcd_site)+acceptance+monitoring,data=abcd.data[abcd.data$race.6level=="AIAN/NHPI",])) # not enough subjects
+
+summary(lmer(thompson_PC1~interview_age+sex+(1|rel_family_id)+(1|abcd_site)+acceptance+monitoring,data=abcd.data[abcd.data$race.6level=="Other",]))
+summary(lmer(thompson_PC2~interview_age+sex+(1|rel_family_id)+(1|abcd_site)+acceptance+monitoring,data=abcd.data[abcd.data$race.6level=="Other",])) # does not replicate
+summary(lmer(thompson_PC3~interview_age+sex+(1|rel_family_id)+(1|abcd_site)+acceptance+monitoring,data=abcd.data[abcd.data$race.6level=="Other",])) # does not replicate
+
+summary(lmer(thompson_PC1~interview_age+sex+(1|rel_family_id)+(1|abcd_site)+acceptance+monitoring,data=abcd.data[abcd.data$race.6level=="Mixed",]))
+summary(lmer(thompson_PC2~interview_age+sex+(1|rel_family_id)+(1|abcd_site)+acceptance+monitoring,data=abcd.data[abcd.data$race.6level=="Mixed",]))
+summary(lmer(thompson_PC3~interview_age+sex+(1|rel_family_id)+(1|abcd_site)+acceptance+monitoring,data=abcd.data[abcd.data$race.6level=="Mixed",]))
 ```
 
