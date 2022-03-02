@@ -1,0 +1,696 @@
+---
+title: "SES_Caregiving_Cognition"
+author: "Arielle Keller"
+date: "2/28/2022"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+options(width=250)
+library(tidyr)
+library(dplyr)
+library(ggplot2)
+library(lsr)
+library(lme4)
+library(lmerTest)
+library(mediation)
+library(ggcorrplot)
+library(corrplot)
+library(RColorBrewer)
+library(glmnet)
+library(mgcv)
+library(gamm4)
+library(readr)
+library(effectsize)
+library(broom)
+library(knitr)
+library(sjPlot)
+```
+
+
+# Load data
+```{r}
+nihtb<-read.table("/Users/ariellekeller/Documents/Kellernet_PrelimAnalysis/NihTB/abcd_tbss01.txt",header=TRUE)
+nihtb.baseline<-nihtb[nihtb$eventname=="baseline_year_1_arm_1",]
+lmt<-read.table("/Users/ariellekeller/Documents/Kellernet_PrelimAnalysis/Thomp/lmtp201.txt",header=TRUE)
+lmt.baseline<-lmt[lmt$eventname=="baseline_year_1_arm_1",]
+merged.data2 <- merge(nihtb.baseline,lmt.baseline[, c("subjectkey", setdiff(colnames(lmt.baseline),colnames(nihtb.baseline)))],by="subjectkey")
+ravlt<-read.table("/Users/ariellekeller/Documents/Kellernet_PrelimAnalysis/Thomp/abcd_ps01.txt",header=TRUE)
+ravlt.baseline<-ravlt[ravlt$eventname=="baseline_year_1_arm_1",]
+merged.data3 <- merge(merged.data2,ravlt.baseline[, c("subjectkey", setdiff(colnames(ravlt.baseline),colnames(merged.data2)))],by="subjectkey")
+trauma<-read.table("/Users/ariellekeller/Documents/Kellernet_PrelimAnalysis/Strife/abcd_ptsd01.txt",header=TRUE)
+trauma.baseline<-trauma[trauma$eventname=="baseline_year_1_arm_1",]
+combined.data <- merge(merged.data3,trauma.baseline[, c("subjectkey", setdiff(colnames(trauma.baseline),colnames(merged.data3)))],by="subjectkey")
+```
+
+
+# Organize behavioral data
+```{r}
+# Coerce data types
+combined.data$nihtbx_flanker_uncorrected <- as.numeric(combined.data$nihtbx_flanker_uncorrected)
+combined.data$nihtbx_picvocab_uncorrected <- as.numeric(combined.data$nihtbx_picvocab_uncorrected)
+combined.data$nihtbx_list_uncorrected <- as.numeric(combined.data$nihtbx_list_uncorrected)
+combined.data$nihtbx_pattern_uncorrected <- as.numeric(combined.data$nihtbx_pattern_uncorrected)
+combined.data$nihtbx_cardsort_uncorrected <- as.numeric(combined.data$nihtbx_cardsort_uncorrected)
+combined.data$nihtbx_picture_uncorrected <- as.numeric(combined.data$nihtbx_picture_uncorrected)
+combined.data$nihtbx_reading_uncorrected <- as.numeric(combined.data$nihtbx_reading_uncorrected)
+combined.data$lmt_scr_perc_correct <- as.numeric(combined.data$lmt_scr_perc_correct)
+combined.data$pea_ravlt_sd_trial_i_tc <- as.numeric(combined.data$pea_ravlt_sd_trial_i_tc)
+combined.data$pea_ravlt_sd_trial_ii_tc <- as.numeric(combined.data$pea_ravlt_sd_trial_ii_tc)
+combined.data$pea_ravlt_sd_trial_iii_tc <- as.numeric(combined.data$pea_ravlt_sd_trial_iii_tc)
+combined.data$pea_ravlt_sd_trial_iv_tc <- as.numeric(combined.data$pea_ravlt_sd_trial_iv_tc)
+combined.data$pea_ravlt_sd_trial_v_tc <- as.numeric(combined.data$pea_ravlt_sd_trial_v_tc)
+combined.data$interview_age <- as.numeric(combined.data$interview_age)
+
+ind_pea_ravlt = c(which(names(combined.data)=="pea_ravlt_sd_trial_i_tc"),which(names(combined.data)=="pea_ravlt_sd_trial_ii_tc"),
+	which(names(combined.data)=="pea_ravlt_sd_trial_iii_tc"),which(names(combined.data)=="pea_ravlt_sd_trial_iv_tc"),
+	which(names(combined.data)=="pea_ravlt_sd_trial_v_tc")); names(combined.data)[ind_pea_ravlt]; summary(combined.data[,ind_pea_ravlt])
+combined.data$pea_ravlt_ld = apply(combined.data[,ind_pea_ravlt],1,sum)
+
+combined.data$pea_ravlt_ld <- as.numeric(combined.data$pea_ravlt_ld)
+
+# Rename according to Thompson 2018 code
+names(combined.data)[which(names(combined.data)=="nihtbx_picvocab_uncorrected")] = "PicVocab"
+names(combined.data)[which(names(combined.data)=="nihtbx_flanker_uncorrected")] = "Flanker"
+names(combined.data)[which(names(combined.data)=="nihtbx_list_uncorrected")] = "List"
+names(combined.data)[which(names(combined.data)=="nihtbx_cardsort_uncorrected")] = "CardSort"
+names(combined.data)[which(names(combined.data)=="nihtbx_pattern_uncorrected")] = "Pattern"
+names(combined.data)[which(names(combined.data)=="nihtbx_picture_uncorrected")] = "Picture"
+names(combined.data)[which(names(combined.data)=="nihtbx_reading_uncorrected")] = "Reading"
+names(combined.data)[which(names(combined.data)=="pea_ravlt_ld")] = "RAVLT"
+names(combined.data)[which(names(combined.data)=="lmt_scr_perc_correct")] = "LMT"
+```
+
+
+
+# Calculate Thompson factor scores
+```{r}
+combined.data$thompson_PC1 <- (0.754*combined.data$PicVocab)+(0.213*combined.data$Flanker)+(0.471*combined.data$List)+(0.205*combined.data$CardSort)+(0.015*combined.data$Pattern)+(0.012*combined.data$Picture)+(0.82*combined.data$Reading)+(0.306*combined.data$RAVLT)+(0.5*combined.data$LMT)
+
+combined.data$thompson_PC2 <- (0.065*combined.data$PicVocab)+(0.712*combined.data$Flanker)+(0.148*combined.data$List)+(0.71*combined.data$CardSort)+(0.813*combined.data$Pattern)+(0.135*combined.data$Picture)+(0.12*combined.data$Reading)+(0.125*combined.data$RAVLT)+(0.299*combined.data$LMT)
+
+combined.data$thompson_PC3 <- (0.19*combined.data$PicVocab)+(0.067*combined.data$Flanker)+(0.493*combined.data$List)+(0.232*combined.data$CardSort)+(0.085*combined.data$Pattern)+(0.863*combined.data$Picture)+(0.122*combined.data$Reading)+(0.712*combined.data$RAVLT)+(0.068*combined.data$LMT)
+
+# Remove outliers
+mean_PC1 <- mean(combined.data$thompson_PC1,na.rm=TRUE)
+mean_PC2 <- mean(combined.data$thompson_PC2,na.rm=TRUE)
+mean_PC3 <- mean(combined.data$thompson_PC3,na.rm=TRUE)
+sd3_PC1 <- sd(combined.data$thompson_PC1,na.rm=TRUE)*3
+sd3_PC2 <- sd(combined.data$thompson_PC2,na.rm=TRUE)*3
+sd3_PC3 <- sd(combined.data$thompson_PC3,na.rm=TRUE)*3
+sum(combined.data$thompson_PC1 >= mean_PC1+sd3_PC1,na.rm=TRUE) # 8 outliers
+sum(combined.data$thompson_PC2 >= mean_PC2+sd3_PC2,na.rm=TRUE) # 2 outliers
+sum(combined.data$thompson_PC3 >= mean_PC3+sd3_PC3,na.rm=TRUE) # 0 outliers
+sum(combined.data$thompson_PC1 <= mean_PC1-sd3_PC1,na.rm=TRUE) # 10 outliers
+sum(combined.data$thompson_PC2 <= mean_PC2-sd3_PC2,na.rm=TRUE) # 17 outliers
+sum(combined.data$thompson_PC3 <= mean_PC3-sd3_PC3,na.rm=TRUE) # 7 outliers
+combined.data.noOutliers <- combined.data[combined.data$thompson_PC1>(mean_PC1-sd3_PC1) & combined.data$thompson_PC1<(mean_PC1+sd3_PC1) & combined.data$thompson_PC2>(mean_PC2-sd3_PC2) & combined.data$thompson_PC2<(mean_PC2+sd3_PC2) & combined.data$thompson_PC3>(mean_PC3-sd3_PC3) & combined.data$thompson_PC3<(mean_PC3+sd3_PC3),]
+
+# n=11,781
+```
+
+
+# Add in Parental Warmth and Monitoring
+```{r}
+warmth <-read.table("/Users/ariellekeller/Documents/Kellernet_PrelimAnalysis/neglect/crpbi01.txt",header=TRUE)
+warmth.baseline<-warmth[warmth$eventname=="baseline_year_1_arm_1",]
+monitoring.data <-read.table("/Users/ariellekeller/Documents/Kellernet_PrelimAnalysis/neglect/pmq01.txt",header=TRUE)
+monitoring.baseline<-monitoring.data[monitoring.data$eventname=="baseline_year_1_arm_1",]
+parenting.data <- merge(warmth.baseline,monitoring.baseline[, c("subjectkey", setdiff(colnames(monitoring.baseline),colnames(warmth.baseline)))],by="subjectkey")
+
+abcd.data<-merge(combined.data.noOutliers,parenting.data[,c("subjectkey", setdiff(colnames(parenting.data),colnames(combined.data.noOutliers)))],by="subjectkey")
+
+
+abcd.data$warmth <- rowMeans(data.frame(as.numeric(abcd.data$crpbi_parent1_y),as.numeric(abcd.data$crpbi_parent2_y),as.numeric(abcd.data$crpbi_parent3_y),as.numeric(abcd.data$crpbi_parent4_y),as.numeric(abcd.data$crpbi_parent5_y)))
+
+abcd.data$monitoring <- rowMeans(data.frame(as.numeric(abcd.data$parent_monitor_q1_y),as.numeric(abcd.data$parent_monitor_q2_y),as.numeric(abcd.data$parent_monitor_q3_y),as.numeric(abcd.data$parent_monitor_q4_y),as.numeric(abcd.data$parent_monitor_q5_y)))
+
+# make sure monitoring and acceptance are on the same scale so we can compare effect sizes:
+abcd.data$warmth<-(((abcd.data$warmth-1)/2)*4)+1
+
+# n=10,966
+```
+
+
+# Add in Family and Site covariates
+```{r}
+# Remember to add in this variable about family structure so we can use it as a covariate
+family <-read.table("/Users/ariellekeller/Documents/Kellernet_PrelimAnalysis/ses/acspsw03.txt",header=TRUE)
+family.baseline<-family[family$eventname=="baseline_year_1_arm_1",]
+abcd.data.almost <- merge(abcd.data,family.baseline[, c("subjectkey", setdiff(colnames(family.baseline),colnames(abcd.data)))],by="subjectkey")
+
+# also add in the variable for site ID to use as a covariate
+site_info <- readRDS("/Users/ariellekeller/Documents/Kellernet_PrelimAnalysis/DEAP-siteID.rds")
+site.baseline<-site_info[site_info$event_name=="baseline_year_1_arm_1",]
+colnames(site.baseline)[1]<-"subjectkey"
+abcd.data.almost2 <- merge(abcd.data.almost,site.baseline[,c("subjectkey", setdiff(colnames(site.baseline),colnames(abcd.data.almost)))],by="subjectkey")
+```
+
+
+# Load train/test split from UMinn
+```{r}
+traintest<-read_tsv("/Users/ariellekeller/Documents/Kellernet_PrelimAnalysis/participants.tsv")
+traintest.baseline<-traintest[traintest$session_id=="ses-baselineYear1Arm1",c("participant_id","matched_group")]
+colnames(traintest.baseline)[1]<-c("subjectkey")
+traintest.baseline$subjectkey <- gsub(pattern="sub-NDAR",replacement="NDAR_", traintest.baseline$subjectkey)
+traintest.baseline<-traintest.baseline %>% distinct()
+abcd.data.traintest <- merge(abcd.data.almost2,traintest.baseline,by="subjectkey")
+abcd.data.train <- abcd.data.traintest[abcd.data.traintest$matched_group==1,] # n=5,367
+abcd.data.test <- abcd.data.traintest[abcd.data.traintest$matched_group==2,] # 5,312
+```
+
+
+## How do caregiving behaviors relate to cognition?
+### Monitoring is positively related to all 3 cognitive variables but warmth is not
+```{r}
+cor.test(abcd.data.train$warmth,abcd.data.train$monitoring) # they are correlated at r=0.362
+
+summary(lmer(thompson_PC1~interview_age+sex+(1|rel_family_id)+(1|abcd_site)+warmth+monitoring,data=abcd.data.train))
+summary(lmer(thompson_PC2~interview_age+sex+(1|rel_family_id)+(1|abcd_site)+warmth+monitoring,data=abcd.data.train))
+summary(lmer(thompson_PC3~interview_age+sex+(1|rel_family_id)+(1|abcd_site)+warmth+monitoring,data=abcd.data.train))
+
+summary(lmer(thompson_PC1~interview_age+sex+(1|rel_family_id)+(1|abcd_site)+warmth,data=abcd.data.train))
+summary(lmer(thompson_PC2~interview_age+sex+(1|rel_family_id)+(1|abcd_site)+warmth,data=abcd.data.train))
+summary(lmer(thompson_PC3~interview_age+sex+(1|rel_family_id)+(1|abcd_site)+warmth,data=abcd.data.train))
+
+summary(lmer(thompson_PC1~interview_age+sex+(1|rel_family_id)+(1|abcd_site)+monitoring,data=abcd.data.train))
+summary(lmer(thompson_PC2~interview_age+sex+(1|rel_family_id)+(1|abcd_site)+monitoring,data=abcd.data.train))
+summary(lmer(thompson_PC3~interview_age+sex+(1|rel_family_id)+(1|abcd_site)+monitoring,data=abcd.data.train))
+
+# Get effect sizes
+model1<-anova(lmer(thompson_PC1~interview_age+sex+(1|rel_family_id)+(1|abcd_site)+warmth+monitoring,data=abcd.data.train))
+eta2_w <- F_to_eta2(model1[3,]$`F value`,model1[3,]$NumDF,model1[3,]$DenDF)
+eta2_m <- F_to_eta2(model1[4,]$`F value`,model1[4,]$NumDF,model1[4,]$DenDF)
+model1<-anova(lmer(thompson_PC2~interview_age+sex+(1|rel_family_id)+(1|abcd_site)+warmth+monitoring,data=abcd.data.train))
+eta2_w <- F_to_eta2(model1[3,]$`F value`,model1[3,]$NumDF,model1[3,]$DenDF)
+eta2_m <- F_to_eta2(model1[4,]$`F value`,model1[4,]$NumDF,model1[4,]$DenDF)
+model1<-anova(lmer(thompson_PC3~interview_age+sex+(1|rel_family_id)+(1|abcd_site)+warmth+monitoring,data=abcd.data.train))
+eta2_w <- F_to_eta2(model1[3,]$`F value`,model1[3,]$NumDF,model1[3,]$DenDF)
+eta2_m <- F_to_eta2(model1[4,]$`F value`,model1[4,]$NumDF,model1[4,]$DenDF)
+
+model1<-anova(lmer(thompson_PC1~interview_age+sex+(1|rel_family_id)+(1|abcd_site)+warmth,data=abcd.data.train))
+eta2 <- F_to_eta2(model1[3,]$`F value`,model1[3,]$NumDF,model1[3,]$DenDF)
+model1<-anova(lmer(thompson_PC2~interview_age+sex+(1|rel_family_id)+(1|abcd_site)+warmth,data=abcd.data.train))
+eta2 <- F_to_eta2(model1[3,]$`F value`,model1[3,]$NumDF,model1[3,]$DenDF)
+model1<-anova(lmer(thompson_PC3~interview_age+sex+(1|rel_family_id)+(1|abcd_site)+warmth,data=abcd.data.train))
+eta2 <- F_to_eta2(model1[3,]$`F value`,model1[3,]$NumDF,model1[3,]$DenDF)
+
+model1<-anova(lmer(thompson_PC1~interview_age+sex+(1|rel_family_id)+(1|abcd_site)+monitoring,data=abcd.data.train))
+eta2 <- F_to_eta2(model1[3,]$`F value`,model1[3,]$NumDF,model1[3,]$DenDF)
+model1<-anova(lmer(thompson_PC2~interview_age+sex+(1|rel_family_id)+(1|abcd_site)+monitoring,data=abcd.data.train))
+eta2 <- F_to_eta2(model1[3,]$`F value`,model1[3,]$NumDF,model1[3,]$DenDF)
+model1<-anova(lmer(thompson_PC3~interview_age+sex+(1|rel_family_id)+(1|abcd_site)+monitoring,data=abcd.data.train))
+eta2 <- F_to_eta2(model1[3,]$`F value`,model1[3,]$NumDF,model1[3,]$DenDF)
+
+
+# Print models to table
+mod1<-lmer(thompson_PC1~interview_age+sex+(1|rel_family_id)+(1|abcd_site)+warmth+monitoring,data=abcd.data.train)
+mod2<-lmer(thompson_PC2~interview_age+sex+(1|rel_family_id)+(1|abcd_site)+warmth+monitoring,data=abcd.data.train)
+mod3<-lmer(thompson_PC3~interview_age+sex+(1|rel_family_id)+(1|abcd_site)+warmth+monitoring,data=abcd.data.train)
+mod4<-lmer(thompson_PC1~interview_age+sex+(1|rel_family_id)+(1|abcd_site)+warmth,data=abcd.data.train)
+mod5<-lmer(thompson_PC2~interview_age+sex+(1|rel_family_id)+(1|abcd_site)+warmth,data=abcd.data.train)
+mod6<-lmer(thompson_PC3~interview_age+sex+(1|rel_family_id)+(1|abcd_site)+warmth,data=abcd.data.train)
+mod7<-lmer(thompson_PC1~interview_age+sex+(1|rel_family_id)+(1|abcd_site)+monitoring,data=abcd.data.train)
+mod8<-lmer(thompson_PC2~interview_age+sex+(1|rel_family_id)+(1|abcd_site)+monitoring,data=abcd.data.train)
+mod9<-lmer(thompson_PC3~interview_age+sex+(1|rel_family_id)+(1|abcd_site)+monitoring,data=abcd.data.train)
+tab_model(mod1,mod2,mod3,pred.labels = c("Intercept","Age","Sex","Warmth","Monitoring"),dv.labels=c("General Cognition","Executive Function","Learning/Memory"),digits=2,digits.p=2,show.se=TRUE,show.stat=TRUE,string.stat = "t",string.se = "Std. Error",show.intercept=TRUE,show.ci = FALSE, p.adjust="bonferroni",p.style="scientific",file = "/Users/ariellekeller/Documents/Writing_InProgress/ParentalMonitoring_Cognition/Warmth_Monitoring_TableX.doc")
+tab_model(mod4,mod5,mod6,pred.labels = c("Intercept","Age","Sex","Warmth"),dv.labels=c("General Cognition","Executive Function","Learning/Memory"),digits=2,digits.p=2,show.se=TRUE,show.stat=TRUE,string.stat = "t",string.se = "Std. Error",show.intercept=TRUE,show.ci = FALSE, p.adjust="bonferroni",p.style="scientific", file = "/Users/ariellekeller/Documents/Writing_InProgress/ParentalMonitoring_Cognition/Warmth_TableX.doc")
+tab_model(mod7,mod8,mod9,pred.labels = c("Intercept","Age","Sex","Monitoring"),dv.labels=c("General Cognition","Executive Function","Learning/Memory"),digits=2,digits.p=2,show.se=TRUE,show.stat=TRUE,string.stat = "t",string.se = "Std. Error",show.intercept=TRUE,show.ci = FALSE, p.adjust="bonferroni",p.style="scientific", file = "/Users/ariellekeller/Documents/Writing_InProgress/ParentalMonitoring_Cognition/Monitoring_TableX.doc")
+```
+
+
+## How does SES relate to cognition?
+### It's significantly associated with all cognitive variables 
+```{r}
+summary(lmer(thompson_PC1~interview_age+sex+(1|rel_family_id)+(1|abcd_site)+household.income,data=abcd.data.train))
+summary(lmer(thompson_PC2~interview_age+sex+(1|rel_family_id)+(1|abcd_site)+household.income,data=abcd.data.train))
+summary(lmer(thompson_PC3~interview_age+sex+(1|rel_family_id)+(1|abcd_site)+household.income,data=abcd.data.train))
+
+# Get effect sizes
+model1<-anova(lmer(thompson_PC1~interview_age+sex+(1|rel_family_id)+(1|abcd_site)+household.income,data=abcd.data.train))
+eta2 <- F_to_eta2(model1[3,]$`F value`,model1[3,]$NumDF,model1[3,]$DenDF)
+model1<-anova(lmer(thompson_PC2~interview_age+sex+(1|rel_family_id)+(1|abcd_site)+household.income,data=abcd.data.train))
+eta2 <- F_to_eta2(model1[3,]$`F value`,model1[3,]$NumDF,model1[3,]$DenDF)
+model1<-anova(lmer(thompson_PC3~interview_age+sex+(1|rel_family_id)+(1|abcd_site)+household.income,data=abcd.data.train))
+eta2 <- F_to_eta2(model1[3,]$`F value`,model1[3,]$NumDF,model1[3,]$DenDF)
+
+# print results to table
+mod10<-lmer(thompson_PC1~interview_age+sex+(1|rel_family_id)+(1|abcd_site)+household.income,data=abcd.data.train)
+mod11<-lmer(thompson_PC2~interview_age+sex+(1|rel_family_id)+(1|abcd_site)+household.income,data=abcd.data.train)
+mod12<-lmer(thompson_PC3~interview_age+sex+(1|rel_family_id)+(1|abcd_site)+household.income,data=abcd.data.train)
+tab_model(mod10,mod11,mod12,pred.labels = c("Intercept","Age","Sex","Household Income [50K-100K]","Household Income [>=100K]"),dv.labels=c("General Cognition","Executive Function","Learning/Memory"),digits=2,digits.p=2,show.se=TRUE,show.stat=TRUE,string.stat = "t",string.se = "Std. Error",show.intercept=TRUE,show.ci = FALSE, p.adjust="bonferroni",p.style="scientific",file = "/Users/ariellekeller/Documents/Writing_InProgress/ParentalMonitoring_Cognition/Income_TableX.doc")
+
+```
+
+
+
+## Is SES associated with differences in parenting behaviors?
+### SES is related to diffferences in monitoring but NOT differences in warmth (doesn't pass correction)
+```{r}
+summary(lmer(monitoring~interview_age+sex+(1|rel_family_id)+(1|abcd_site)+household.income,data=abcd.data.train))
+summary(lmer(warmth~interview_age+sex+(1|rel_family_id)+(1|abcd_site)+household.income,data=abcd.data.train))
+
+# Get effect sizes
+model1<-anova(lmer(monitoring~interview_age+sex+(1|rel_family_id)+(1|abcd_site)+household.income,data=abcd.data.train))
+eta2 <- F_to_eta2(model1[3,]$`F value`,model1[3,]$NumDF,model1[3,]$DenDF)
+model1<-anova(lmer(warmth~interview_age+sex+(1|rel_family_id)+(1|abcd_site)+household.income,data=abcd.data.train))
+eta2 <- F_to_eta2(model1[3,]$`F value`,model1[3,]$NumDF,model1[3,]$DenDF)
+
+mod13<-lmer(monitoring~interview_age+sex+(1|rel_family_id)+(1|abcd_site)+household.income,data=abcd.data.train)
+mod14<-lmer(warmth~interview_age+sex+(1|rel_family_id)+(1|abcd_site)+household.income,data=abcd.data.train)
+tab_model(mod13,mod14,pred.labels = c("Intercept","Age","Sex","Household Income [50K-100K]","Household Income [>=100K]"),dv.labels=c("Monitoring","Warmth"),digits=2,digits.p=2,show.se=TRUE,show.stat=TRUE,string.stat = "t",string.se = "Std. Error",show.intercept=TRUE,show.ci = FALSE, p.adjust="bonferroni",p.style="scientific",file = "/Users/ariellekeller/Documents/Writing_InProgress/ParentalMonitoring_Cognition/Income_Caregiving_TableX.doc")
+
+```
+
+
+## Look at mediation SES --> monitoring --> PC1
+```{r}
+summary(lmer(thompson_PC1~interview_age+sex+(1|rel_family_id)+(1|abcd_site)+household.income,data=abcd.data.train))
+summary(lmer(thompson_PC1~interview_age+sex+(1|rel_family_id)+(1|abcd_site)+household.income+monitoring,data=abcd.data.train))
+
+# partial mediation is significant!
+bs_indir = c()
+for (i in 1:1000){
+  thisSample <- sample(c(1:length(abcd.data.train$subjectkey)),length(abcd.data.train$subjectkey),replace=TRUE)
+  pathc<-lmer(thompson_PC1~interview_age+sex+(1|rel_family_id)+(1|abcd_site)+household.income,data=abcd.data.train[thisSample,])
+  pathcp<-lmer(thompson_PC1~interview_age+sex+(1|rel_family_id)+(1|abcd_site)+household.income+monitoring,data=abcd.data.train[thisSample,])
+  indir<-fixef(pathc)[5]-fixef(pathcp)[5]
+  bs_indir <- c(bs_indir,indir)
+}
+t.test(bs_indir,conf.level=0.95)
+# t = 94.813, df = 999, p-value < 2.2e-16
+# alternative hypothesis: true mean is not equal to 0
+# 95 percent confidence interval:
+#  0.3131269 0.3263624
+# sample estimates:
+# mean of x 
+# 0.3197447 
+
+
+```
+
+
+## Look at mediation SES --> monitoring --> PC2
+```{r}
+summary(lmer(thompson_PC2~interview_age+sex+(1|rel_family_id)+(1|abcd_site)+household.income,data=abcd.data.train))
+summary(lmer(thompson_PC2~interview_age+sex+(1|rel_family_id)+(1|abcd_site)+household.income+monitoring,data=abcd.data.train))
+
+# partial mediation is significant!
+bs_indir = c()
+for (i in 1:1000){
+  thisSample <- sample(c(1:length(abcd.data.train$subjectkey)),length(abcd.data.train$subjectkey),replace=TRUE)
+  pathc<-lmer(thompson_PC2~interview_age+sex+(1|rel_family_id)+(1|abcd_site)+household.income,data=abcd.data.train[thisSample,])
+  pathcp<-lmer(thompson_PC2~interview_age+sex+(1|rel_family_id)+(1|abcd_site)+household.income+monitoring,data=abcd.data.train[thisSample,])
+  indir<-fixef(pathc)[5]-fixef(pathcp)[5]
+  bs_indir <- c(bs_indir,indir)
+}
+t.test(bs_indir,conf.level=0.95)
+# t = 27.513, df = 999, p-value < 2.2e-16
+# alternative hypothesis: true mean is not equal to 0
+# 95 percent confidence interval:
+#  0.1060481 0.1223373
+# sample estimates:
+# mean of x 
+# 0.1141927 
+
+```
+
+
+
+## Look at mediation SES --> monitoring --> PC3
+```{r}
+summary(lmer(thompson_PC3~interview_age+sex+(1|rel_family_id)+(1|abcd_site)+household.income,data=abcd.data.train))
+summary(lmer(thompson_PC3~interview_age+sex+(1|rel_family_id)+(1|abcd_site)+household.income+monitoring,data=abcd.data.train))
+
+# partial mediation is significant!
+bs_indir = c()
+for (i in 1:1000){
+  thisSample <- sample(c(1:length(abcd.data.train$subjectkey)),length(abcd.data.train$subjectkey),replace=TRUE)
+  pathc<-lmer(thompson_PC3~interview_age+sex+(1|rel_family_id)+(1|abcd_site)+household.income,data=abcd.data.train[thisSample,])
+  pathcp<-lmer(thompson_PC3~interview_age+sex+(1|rel_family_id)+(1|abcd_site)+household.income+monitoring,data=abcd.data.train[thisSample,])
+  indir<-fixef(pathc)[5]-fixef(pathcp)[5]
+  bs_indir <- c(bs_indir,indir)
+}
+t.test(bs_indir,conf.level=0.95)
+
+# t = 72.373, df = 999, p-value < 2.2e-16
+# alternative hypothesis: true mean is not equal to 0
+# 95 percent confidence interval:
+#  0.2864221 0.3023873
+# sample estimates:
+# mean of x 
+# 0.2944047 
+```
+
+
+# Make mediation table:
+```{r}
+moda<-lmer(thompson_PC1~interview_age+sex+(1|rel_family_id)+(1|abcd_site)+household.income,data=abcd.data.train)
+modb<-lmer(thompson_PC1~interview_age+sex+(1|rel_family_id)+(1|abcd_site)+household.income+monitoring,data=abcd.data.train)
+modc<-lmer(thompson_PC2~interview_age+sex+(1|rel_family_id)+(1|abcd_site)+household.income,data=abcd.data.train)
+modd<-lmer(thompson_PC2~interview_age+sex+(1|rel_family_id)+(1|abcd_site)+household.income+monitoring,data=abcd.data.train)
+mode<-lmer(thompson_PC3~interview_age+sex+(1|rel_family_id)+(1|abcd_site)+household.income,data=abcd.data.train)
+modf<-lmer(thompson_PC3~interview_age+sex+(1|rel_family_id)+(1|abcd_site)+household.income+monitoring,data=abcd.data.train)
+
+tab_model(moda,modc,mode,pred.labels = c("Intercept","Age","Sex","Household Income [50K-100K]","Household Income [>=100K]"),dv.labels=c("General Cognition","Executive Function","Learning/Memory"),digits=2,digits.p=2,show.se=TRUE,show.stat=TRUE,string.stat = "t",string.se = "Std. Error",show.intercept=TRUE,show.ci = FALSE, p.adjust="bonferroni",p.style="scientific",file = "/Users/ariellekeller/Documents/Writing_InProgress/ParentalMonitoring_Cognition/Mediation1_TableX.doc")
+
+tab_model(modb,modd,modf,pred.labels = c("Intercept","Age","Sex","Household Income [50K-100K]","Household Income [>=100K]","Monitoring"),dv.labels=c("General Cognition","Executive Function","Learning/Memory"),digits=2,digits.p=2,show.se=TRUE,show.stat=TRUE,string.stat = "t",string.se = "Std. Error",show.intercept=TRUE,show.ci = FALSE, p.adjust="bonferroni",p.style="scientific",file = "/Users/ariellekeller/Documents/Writing_InProgress/ParentalMonitoring_Cognition/Mediation2_TableX.doc")
+```
+
+
+# Simplified mediation analyses (>50K vs <50K) for the purpose of the figure
+```{r}
+abcd.data.train$simple.income <- ifelse(abcd.data.train$household.income=="[<50K]","Low","High")
+summary(lmer(thompson_PC1~interview_age+sex+(1|rel_family_id)+(1|abcd_site)+simple.income,data=abcd.data.train))
+summary(lmer(thompson_PC1~interview_age+sex+(1|rel_family_id)+(1|abcd_site)+simple.income+monitoring,data=abcd.data.train))
+summary(lmer(thompson_PC2~interview_age+sex+(1|rel_family_id)+(1|abcd_site)+simple.income,data=abcd.data.train))
+summary(lmer(thompson_PC2~interview_age+sex+(1|rel_family_id)+(1|abcd_site)+simple.income+monitoring,data=abcd.data.train))
+summary(lmer(thompson_PC3~interview_age+sex+(1|rel_family_id)+(1|abcd_site)+simple.income,data=abcd.data.train))
+summary(lmer(thompson_PC3~interview_age+sex+(1|rel_family_id)+(1|abcd_site)+simple.income+monitoring,data=abcd.data.train))
+
+
+abcd.data.train$simple.income2 <- ifelse(abcd.data.train$household.income=="[>=100K]","High","Low")
+summary(lmer(thompson_PC1~interview_age+sex+(1|rel_family_id)+(1|abcd_site)+simple.income2,data=abcd.data.train))
+summary(lmer(thompson_PC1~interview_age+sex+(1|rel_family_id)+(1|abcd_site)+simple.income2+monitoring,data=abcd.data.train))
+summary(lmer(thompson_PC2~interview_age+sex+(1|rel_family_id)+(1|abcd_site)+simple.income2,data=abcd.data.train))
+summary(lmer(thompson_PC2~interview_age+sex+(1|rel_family_id)+(1|abcd_site)+simple.income2+monitoring,data=abcd.data.train))
+summary(lmer(thompson_PC3~interview_age+sex+(1|rel_family_id)+(1|abcd_site)+simple.income2,data=abcd.data.train))
+summary(lmer(thompson_PC3~interview_age+sex+(1|rel_family_id)+(1|abcd_site)+simple.income2+monitoring,data=abcd.data.train))
+
+
+summary(lmer(thompson_PC1~interview_age+sex+(1|rel_family_id)+(1|abcd_site)+monitoring,data=abcd.data.train))
+summary(lmer(thompson_PC2~interview_age+sex+(1|rel_family_id)+(1|abcd_site)+monitoring,data=abcd.data.train))
+summary(lmer(thompson_PC3~interview_age+sex+(1|rel_family_id)+(1|abcd_site)+monitoring,data=abcd.data.train))
+
+summary(lmer(monitoring~interview_age+sex+(1|rel_family_id)+(1|abcd_site)+simple.income,data=abcd.data.train))
+```
+
+
+
+# Create a correlation matrix showing relatioships among variables
+```{r}
+important.variables <- abcd.data.traintest[,c("warmth","monitoring","thompson_PC1","thompson_PC2","thompson_PC3")]
+colnames(important.variables)<-c("Caregiver Warmth","Caregiver Monitoring","General Cognition","Executive Function","Learning/Memory")
+corrplot(cor(important.variables,use="complete.obs"),method=c("number"), tl.col = "black", col=brewer.pal(n=8, name="Spectral"))
+```
+
+
+### Look at specific items within parental warmth and parental monitoring:
+```{r}
+abcd.data.traintest$crpbi_parent1_y<-as.numeric(abcd.data.traintest$crpbi_parent1_y)
+abcd.data.traintest$crpbi_parent2_y<-as.numeric(abcd.data.traintest$crpbi_parent2_y)
+abcd.data.traintest$crpbi_parent3_y<-as.numeric(abcd.data.traintest$crpbi_parent3_y)
+abcd.data.traintest$crpbi_parent4_y<-as.numeric(abcd.data.traintest$crpbi_parent4_y)
+abcd.data.traintest$crpbi_parent5_y<-as.numeric(abcd.data.traintest$crpbi_parent5_y)
+abcd.data.traintest$parent_monitor_q1_y<-as.numeric(abcd.data.traintest$parent_monitor_q1_y)
+abcd.data.traintest$parent_monitor_q2_y<-as.numeric(abcd.data.traintest$parent_monitor_q2_y)
+abcd.data.traintest$parent_monitor_q3_y<-as.numeric(abcd.data.traintest$parent_monitor_q3_y)
+abcd.data.traintest$parent_monitor_q4_y<-as.numeric(abcd.data.traintest$parent_monitor_q4_y)
+abcd.data.traintest$parent_monitor_q5_y<-as.numeric(abcd.data.traintest$parent_monitor_q5_y)
+
+
+important.variables3 <- abcd.data.traintest[,c("crpbi_parent1_y","crpbi_parent2_y","crpbi_parent3_y","crpbi_parent4_y","crpbi_parent5_y")]
+colnames(important.variables3)<-c("Feel better talking worries","Smiles at me","Feel better when upset","Shows love","Easy to talk to")
+corrplot(cor(important.variables3,use="complete.obs"),method=c("number"), tl.col = "black", col=brewer.pal(n=8, name="Spectral"))
+
+important.variables4 <- abcd.data.traintest[,c("parent_monitor_q1_y","parent_monitor_q2_y","parent_monitor_q3_y","parent_monitor_q4_y","parent_monitor_q5_y")]
+colnames(important.variables4)<-c("Know where you are","Know who you're with","Know how to contact","Talk over plans","Dinner together")
+corrplot(cor(important.variables4,use="complete.obs"),method=c("number"), tl.col = "black", col=brewer.pal(n=8, name="Spectral"))
+
+summary(lmer(thompson_PC1~interview_age+sex+(1|rel_family_id)+(1|abcd_site)+parent_monitor_q1_y+parent_monitor_q2_y+parent_monitor_q3_y+parent_monitor_q4_y+parent_monitor_q5_y,data=abcd.data.traintest)) # all significant *** (Q4 opp direction)
+summary(lmer(thompson_PC2~interview_age+sex+(1|rel_family_id)+(1|abcd_site)+parent_monitor_q1_y+parent_monitor_q2_y+parent_monitor_q3_y+parent_monitor_q4_y+parent_monitor_q5_y,data=abcd.data.traintest)) # all but Q3 sig (Q4 opp direction)
+summary(lmer(thompson_PC3~interview_age+sex+(1|rel_family_id)+(1|abcd_site)+parent_monitor_q1_y+parent_monitor_q2_y+parent_monitor_q3_y+parent_monitor_q4_y+parent_monitor_q5_y,data=abcd.data.traintest)) # all significant (Q4 opp direction)
+
+summary(lmer(thompson_PC1~interview_age+sex+(1|rel_family_id)+(1|abcd_site)+crpbi_parent1_y+crpbi_parent2_y+crpbi_parent3_y+crpbi_parent4_y+crpbi_parent5_y,data=abcd.data.traintest)) # Q2, Q4, Q5 significant (Q5 opp direction)
+summary(lmer(thompson_PC2~interview_age+sex+(1|rel_family_id)+(1|abcd_site)+crpbi_parent1_y+crpbi_parent2_y+crpbi_parent3_y+crpbi_parent4_y+crpbi_parent5_y,data=abcd.data.traintest)) # Q2, Q4, Q5 significant (Q5 opp direction)
+summary(lmer(thompson_PC3~interview_age+sex+(1|rel_family_id)+(1|abcd_site)+crpbi_parent1_y+crpbi_parent2_y+crpbi_parent3_y+crpbi_parent4_y+crpbi_parent5_y,data=abcd.data.traintest)) # Q2, Q4, Q5 significant (Q5 opp direction)
+
+
+
+# make tables
+mod15<-lmer(thompson_PC1~interview_age+sex+(1|rel_family_id)+(1|abcd_site)+parent_monitor_q1_y+parent_monitor_q2_y+parent_monitor_q3_y+parent_monitor_q4_y+parent_monitor_q5_y,data=abcd.data.traintest)
+mod16<-lmer(thompson_PC2~interview_age+sex+(1|rel_family_id)+(1|abcd_site)+parent_monitor_q1_y+parent_monitor_q2_y+parent_monitor_q3_y+parent_monitor_q4_y+parent_monitor_q5_y,data=abcd.data.traintest)
+mod17<-lmer(thompson_PC3~interview_age+sex+(1|rel_family_id)+(1|abcd_site)+parent_monitor_q1_y+parent_monitor_q2_y+parent_monitor_q3_y+parent_monitor_q4_y+parent_monitor_q5_y,data=abcd.data.traintest)
+tab_model(mod15,mod16,mod17,pred.labels = c("Intercept","Age","Sex","Know where you are","Know who you're with","Know how to contact","Talk over plans","Dinner together"),dv.labels=c("General Cognition","Executive Function","Learning/Memory"),digits=2,digits.p=2,show.se=TRUE,show.stat=TRUE,string.stat = "t",string.se = "Std. Error",show.intercept=TRUE,show.ci = FALSE, p.adjust="bonferroni",p.style="scientific",file = "/Users/ariellekeller/Documents/Writing_InProgress/ParentalMonitoring_Cognition/Items_TableX.doc")
+```
+
+
+### Is parental monitoring related to increased stress exposures?
+```{r}
+abcd.data.traintest$totalACEs <- rowSums(data.frame(as.numeric(abcd.data.traintest$ksads_ptsd_raw_754_p),as.numeric(abcd.data.traintest$ksads_ptsd_raw_755_p),as.numeric(abcd.data.traintest$ksads_ptsd_raw_756_p),as.numeric(abcd.data.traintest$ksads_ptsd_raw_757_p),as.numeric(abcd.data.traintest$ksads_ptsd_raw_758_p),as.numeric(abcd.data.traintest$ksads_ptsd_raw_759_p),as.numeric(abcd.data.traintest$ksads_ptsd_raw_760_p),as.numeric(abcd.data.traintest$ksads_ptsd_raw_761_p),as.numeric(abcd.data.traintest$ksads_ptsd_raw_762_p),as.numeric(abcd.data.traintest$ksads_ptsd_raw_763_p),as.numeric(abcd.data.traintest$ksads_ptsd_raw_764_p),as.numeric(abcd.data.traintest$ksads_ptsd_raw_765_p),as.numeric(abcd.data.traintest$ksads_ptsd_raw_766_p),as.numeric(abcd.data.traintest$ksads_ptsd_raw_767_p),as.numeric(abcd.data.traintest$ksads_ptsd_raw_768_p),as.numeric(abcd.data.traintest$ksads_ptsd_raw_769_p),as.numeric(abcd.data.traintest$ksads_ptsd_raw_770_p)),na.rm=TRUE)
+
+summary(lmer(totalACEs~interview_age+sex+(1|rel_family_id)+(1|abcd_site)+monitoring,data=abcd.data.traintest))
+```
+
+
+### Sensitivity analyses
+```{r}
+# Race 6 level (1: White | 2: Black | 3: Asian | 4: AIAN/NHPI | 5: Other | 6: Mixed)
+summary(lmer(thompson_PC1~interview_age+sex+(1|rel_family_id)+(1|abcd_site)+race.6level+monitoring,data=abcd.data.train))
+summary(lmer(thompson_PC2~interview_age+sex+(1|rel_family_id)+(1|abcd_site)+race.6level+monitoring,data=abcd.data.train))
+summary(lmer(thompson_PC3~interview_age+sex+(1|rel_family_id)+(1|abcd_site)+race.6level+monitoring,data=abcd.data.train))
+
+summary(lmer(thompson_PC1~interview_age+sex+(1|rel_family_id)+(1|abcd_site)+race.6level+household.income,data=abcd.data.train))
+summary(lmer(thompson_PC2~interview_age+sex+(1|rel_family_id)+(1|abcd_site)+race.6level+household.income,data=abcd.data.train))
+summary(lmer(thompson_PC3~interview_age+sex+(1|rel_family_id)+(1|abcd_site)+race.6level+household.income,data=abcd.data.train))
+
+summary(lmer(monitoring~interview_age+sex+(1|rel_family_id)+(1|abcd_site)+race.6level+household.income,data=abcd.data.train))
+
+
+# Parent's highest degree of education
+summary(lmer(thompson_PC1~interview_age+sex+(1|rel_family_id)+(1|abcd_site)+high.educ+monitoring,data=abcd.data.train))
+summary(lmer(thompson_PC2~interview_age+sex+(1|rel_family_id)+(1|abcd_site)+high.educ+monitoring,data=abcd.data.train))
+summary(lmer(thompson_PC3~interview_age+sex+(1|rel_family_id)+(1|abcd_site)+high.educ+monitoring,data=abcd.data.train))
+
+summary(lmer(thompson_PC1~interview_age+sex+(1|rel_family_id)+(1|abcd_site)+high.educ+household.income,data=abcd.data.train))
+summary(lmer(thompson_PC2~interview_age+sex+(1|rel_family_id)+(1|abcd_site)+high.educ+household.income,data=abcd.data.train))
+summary(lmer(thompson_PC3~interview_age+sex+(1|rel_family_id)+(1|abcd_site)+high.educ+household.income,data=abcd.data.train))
+
+summary(lmer(monitoring~interview_age+sex+(1|rel_family_id)+(1|abcd_site)+high.educ+household.income,data=abcd.data.train))
+
+# Add some more variables:
+addvar<-readRDS("/Users/ariellekeller/Documents/Kellernet_PrelimAnalysis/DEAP-discrim-marriage.rds")
+addvar.baseline<-addvar[addvar$event_name=="baseline_year_1_arm_1",]
+colnames(addvar.baseline)[1]<-"subjectkey"
+abcd.addvar <- merge(abcd.data.train,addvar.baseline[, c("subjectkey", setdiff(colnames(addvar.baseline),colnames(abcd.data.train)))],by="subjectkey")
+
+# Parents Married or Living Together
+summary(lmer(thompson_PC1~interview_age+sex+(1|rel_family_id)+(1|abcd_site)+married.or.livingtogether+monitoring,data=abcd.addvar))
+summary(lmer(thompson_PC2~interview_age+sex+(1|rel_family_id)+(1|abcd_site)+married.or.livingtogether+monitoring,data=abcd.addvar))
+summary(lmer(thompson_PC3~interview_age+sex+(1|rel_family_id)+(1|abcd_site)+married.or.livingtogether+monitoring,data=abcd.addvar))
+
+summary(lmer(thompson_PC1~interview_age+sex+(1|rel_family_id)+(1|abcd_site)+married.or.livingtogether+household.income,data=abcd.addvar))
+summary(lmer(thompson_PC2~interview_age+sex+(1|rel_family_id)+(1|abcd_site)+married.or.livingtogether+household.income,data=abcd.addvar))
+summary(lmer(thompson_PC3~interview_age+sex+(1|rel_family_id)+(1|abcd_site)+married.or.livingtogether+household.income,data=abcd.addvar))
+
+summary(lmer(monitoring~interview_age+sex+(1|rel_family_id)+(1|abcd_site)+married.or.livingtogether+household.income,data=abcd.addvar))
+
+
+# print tables for supplement
+mod18<-lmer(thompson_PC1~interview_age+sex+(1|rel_family_id)+(1|abcd_site)+race.6level+monitoring,data=abcd.data.train)
+mod19<-lmer(thompson_PC2~interview_age+sex+(1|rel_family_id)+(1|abcd_site)+race.6level+monitoring,data=abcd.data.train)
+mod20<-lmer(thompson_PC3~interview_age+sex+(1|rel_family_id)+(1|abcd_site)+race.6level+monitoring,data=abcd.data.train)
+mod21<-lmer(thompson_PC1~interview_age+sex+(1|rel_family_id)+(1|abcd_site)+high.educ+monitoring,data=abcd.data.train)
+mod22<-lmer(thompson_PC2~interview_age+sex+(1|rel_family_id)+(1|abcd_site)+high.educ+monitoring,data=abcd.data.train)
+mod23<-lmer(thompson_PC3~interview_age+sex+(1|rel_family_id)+(1|abcd_site)+high.educ+monitoring,data=abcd.data.train)
+mod24<-lmer(thompson_PC1~interview_age+sex+(1|rel_family_id)+(1|abcd_site)+married.or.livingtogether+monitoring,data=abcd.addvar)
+mod25<-lmer(thompson_PC2~interview_age+sex+(1|rel_family_id)+(1|abcd_site)+married.or.livingtogether+monitoring,data=abcd.addvar)
+mod26<-lmer(thompson_PC3~interview_age+sex+(1|rel_family_id)+(1|abcd_site)+married.or.livingtogether+monitoring,data=abcd.addvar)
+tab_model(mod18,mod19,mod20,pred.labels = c("Intercept","Age","Sex","White","Black","Asian","AIAN/NHPI","Other","Mixed","Monitoring"),dv.labels=c("General Cognition","Executive Function","Learning/Memory"),digits=2,digits.p=2,show.se=TRUE,show.stat=TRUE,string.stat = "t",string.se = "Std. Error",show.intercept=TRUE,show.ci = FALSE, p.adjust="bonferroni",p.style="scientific",file = "/Users/ariellekeller/Documents/Writing_InProgress/ParentalMonitoring_Cognition/Sens_Race_TableX.doc")
+tab_model(mod21,mod22,mod23,pred.labels = c("Intercept","Age","Sex","HS Diploma/GED","Some College","Bachelor","Post Graduate","Monitoring"),dv.labels=c("General Cognition","Executive Function","Learning/Memory"),digits=2,digits.p=2,show.se=TRUE,show.stat=TRUE,string.stat = "t",string.se = "Std. Error",show.intercept=TRUE,show.ci = FALSE, p.adjust="bonferroni",p.style="scientific",file = "/Users/ariellekeller/Documents/Writing_InProgress/ParentalMonitoring_Cognition/Sens_Edu_TableX.doc")
+tab_model(mod24,mod25,mod26,pred.labels = c("Intercept","Age","Sex","Married/Living Together","Monitoring"),dv.labels=c("General Cognition","Executive Function","Learning/Memory"),digits=2,digits.p=2,show.se=TRUE,show.stat=TRUE,string.stat = "t",string.se = "Std. Error",show.intercept=TRUE,show.ci = FALSE, p.adjust="bonferroni",p.style="scientific",file = "/Users/ariellekeller/Documents/Writing_InProgress/ParentalMonitoring_Cognition/Sens_Mar_TableX.doc")
+```
+
+
+# Generate Figures
+```{r}
+png("/Users/ariellekeller/Documents/Writing_InProgress/ParentalMonitoring_Cognition/SES_PC1.png",
+    width = 4000, 
+    height = 3000,
+    res=1000)
+ggplot(data=subset(abcd.data.train,!is.na(household.income)),aes(household.income,thompson_PC1))+geom_boxplot(aes(household.income,thompson_PC1),color=rgb(33/255,80/255,113/255))+coord_cartesian(ylim = c(170, 320))+ theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank(),
+panel.background = element_blank(), axis.line = element_line(colour = "black")) +ylab('General Cognition') + xlab('Household Income')
+dev.off() 
+
+png("/Users/ariellekeller/Documents/Writing_InProgress/ParentalMonitoring_Cognition/SES_PC2.png",
+    width = 4000, 
+    height = 3000,
+    res=1000)
+ggplot(data=subset(abcd.data.train,!is.na(household.income)),aes(household.income,thompson_PC2))+geom_boxplot(aes(household.income,thompson_PC2),color=rgb(64/255,141/255,151/255))+coord_cartesian(ylim = c(170, 320))+ theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank(),
+panel.background = element_blank(), axis.line = element_line(colour = "black")) +ylab('Executive Function') + xlab('Household Income')
+dev.off() 
+
+png("/Users/ariellekeller/Documents/Writing_InProgress/ParentalMonitoring_Cognition/SES_PC3.png",
+    width = 4000, 
+    height = 3000,
+    res=1000)
+ggplot(data=subset(abcd.data.train,!is.na(household.income)),aes(household.income,thompson_PC3))+geom_boxplot(aes(household.income,thompson_PC3),color=rgb(157/255,207/255,160/255))+coord_cartesian(ylim = c(170, 320))+ theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank(),
+panel.background = element_blank(), axis.line = element_line(colour = "black")) +ylab('Learning/Memory') + xlab('Household Income')
+dev.off() 
+
+
+
+png("/Users/ariellekeller/Documents/Writing_InProgress/ParentalMonitoring_Cognition/Monitoring_PC1.png",
+    width = 2500, 
+    height = 3000,
+    res=700)
+ggplot(data=abcd.data.train,aes(monitoring,thompson_PC1))+geom_point(position="jitter",size=1,colour=rgb(33/255,80/255,113/255))+geom_smooth(method=lm,colour='black')+ theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank(),panel.background = element_blank(), axis.line = element_line(colour = "black")) +ylab('General Cognition') + xlab('Monitoring')
+dev.off() 
+
+png("/Users/ariellekeller/Documents/Writing_InProgress/ParentalMonitoring_Cognition/Monitoring_PC2.png",
+    width = 2500, 
+    height = 3000,
+    res=700)
+ggplot(data=abcd.data.train,aes(monitoring,thompson_PC2))+geom_point(position="jitter",size=1,colour=rgb(64/255,141/255,151/255))+geom_smooth(method=lm,colour='black')+ theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank(),panel.background = element_blank(), axis.line = element_line(colour = "black")) +ylab('Executive Function') + xlab('Monitoring')
+dev.off() 
+
+png("/Users/ariellekeller/Documents/Writing_InProgress/ParentalMonitoring_Cognition/Monitoring_PC3.png",
+    width = 2500, 
+    height = 3000,
+    res=700)
+ggplot(data=abcd.data.train,aes(monitoring,thompson_PC3))+geom_point(position="jitter",size=1,colour=rgb(157/255,207/255,160/255))+geom_smooth(method=lm,colour='black')+ theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank(),panel.background = element_blank(), axis.line = element_line(colour = "black")) +ylab('Learning/Memory') + xlab('Monitoring')
+dev.off() 
+
+
+
+png("/Users/ariellekeller/Documents/Writing_InProgress/ParentalMonitoring_Cognition/Warmth_PC1.png",
+    width = 2500, 
+    height = 3000,
+    res=700)
+ggplot(data=abcd.data.train,aes(warmth,thompson_PC1))+geom_point(position="jitter",size=1,colour=rgb(33/255,80/255,113/255))+geom_smooth(method=lm,colour='black')+ theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank(),panel.background = element_blank(), axis.line = element_line(colour = "black")) +ylab('General Cognition') + xlab('Warmth')
+dev.off() 
+
+png("/Users/ariellekeller/Documents/Writing_InProgress/ParentalMonitoring_Cognition/Warmth_PC2.png",
+    width = 2500, 
+    height = 3000,
+    res=700)
+ggplot(data=abcd.data.train,aes(warmth,thompson_PC2))+geom_point(position="jitter",size=1,colour=rgb(64/255,141/255,151/255))+geom_smooth(method=lm,colour='black')+ theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank(),panel.background = element_blank(), axis.line = element_line(colour = "black")) +ylab('Executive Function') + xlab('Warmth')
+dev.off() 
+
+png("/Users/ariellekeller/Documents/Writing_InProgress/ParentalMonitoring_Cognition/Warmth_PC3.png",
+    width = 2500, 
+    height = 3000,
+    res=700)
+ggplot(data=abcd.data.train,aes(warmth,thompson_PC3))+geom_point(position="jitter",size=1,colour=rgb(157/255,207/255,160/255))+geom_smooth(method=lm,colour='black')+ theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank(),panel.background = element_blank(), axis.line = element_line(colour = "black")) +ylab('Learning/Memory') + xlab('Warmth')
+dev.off() 
+
+
+
+
+
+
+df.summary <- subset(abcd.data.train,!is.na(household.income)) %>%
+     group_by(household.income) %>%
+     summarise(
+         se = sd(warmth, na.rm = TRUE)/sqrt(length(warmth)),
+         warmth = mean(warmth,na.rm=TRUE))
+png("/Users/ariellekeller/Documents/Writing_InProgress/ParentalMonitoring_Cognition/Warmth_SES.png",
+    width = 4000, 
+    height = 2000,
+    res=700)
+ggplot(data=df.summary,aes(household.income,warmth,fill=as.factor(household.income)))+geom_bar(position = "dodge",stat = "identity")+coord_cartesian(ylim = c(3.5, 5))+ theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank(),panel.background = element_blank(), axis.line = element_line(colour = "black")) +ylab('Warmth') + xlab('Household Income') + scale_fill_manual(values = c(rgb(145/255,69/255,93/255),rgb(206/255,118/255,119/255),rgb(227/255,180/255,150/255))) + geom_errorbar(aes(ymin=warmth-se, ymax=warmth+se), width=.2,position=position_dodge(.9))
+dev.off() 
+
+df.summary <- subset(abcd.data.train,!is.na(household.income)) %>%
+     group_by(household.income) %>%
+     summarise(
+         se = sd(monitoring, na.rm = TRUE)/sqrt(length(monitoring)),
+         monitoring = mean(monitoring,na.rm=TRUE))
+png("/Users/ariellekeller/Documents/Writing_InProgress/ParentalMonitoring_Cognition/Monitoring_SES.png",
+    width = 4000, 
+    height = 2000,
+    res=700)
+ggplot(data=df.summary,aes(household.income,monitoring,fill=as.factor(household.income)))+geom_bar(position = "dodge",stat = "identity")+coord_cartesian(ylim = c(3.5, 5))+ theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank(),panel.background = element_blank(), axis.line = element_line(colour = "black")) +ylab('Monitoring') + xlab('Household Income') + scale_fill_manual(values = c(rgb(145/255,69/255,93/255),rgb(206/255,118/255,119/255),rgb(227/255,180/255,150/255))) + geom_errorbar(aes(ymin=monitoring-se, ymax=monitoring+se), width=.2,position=position_dodge(.9))
+dev.off() 
+```
+
+
+
+# Generalizability!
+```{r}
+mod31<-lmer(thompson_PC1~interview_age+sex+(1|rel_family_id)+(1|abcd_site)+warmth,data=abcd.data.test)
+mod32<-lmer(thompson_PC2~interview_age+sex+(1|rel_family_id)+(1|abcd_site)+warmth,data=abcd.data.test)
+mod33<-lmer(thompson_PC3~interview_age+sex+(1|rel_family_id)+(1|abcd_site)+warmth,data=abcd.data.test)
+
+tab_model(mod31,mod32,mod33,digits=2,digits.p=2,show.se=TRUE,show.stat=TRUE,string.stat = "t",string.se = "Std. Error",show.intercept=TRUE,show.ci = FALSE, p.adjust="bonferroni",p.style="scientific")
+
+mod34<-lmer(thompson_PC1~interview_age+sex+(1|rel_family_id)+(1|abcd_site)+monitoring,data=abcd.data.test)
+mod35<-lmer(thompson_PC2~interview_age+sex+(1|rel_family_id)+(1|abcd_site)+monitoring,data=abcd.data.test)
+mod36<-lmer(thompson_PC3~interview_age+sex+(1|rel_family_id)+(1|abcd_site)+monitoring,data=abcd.data.test)
+
+tab_model(mod34,mod35,mod36,digits=2,digits.p=2,show.se=TRUE,show.stat=TRUE,string.stat = "t",string.se = "Std. Error",show.intercept=TRUE,show.ci = FALSE, p.adjust="bonferroni",p.style="scientific")
+
+summary(lmer(thompson_PC1~interview_age+sex+(1|rel_family_id)+(1|abcd_site)+household.income,data=abcd.data.test))
+summary(lmer(thompson_PC2~interview_age+sex+(1|rel_family_id)+(1|abcd_site)+household.income,data=abcd.data.test))
+summary(lmer(thompson_PC3~interview_age+sex+(1|rel_family_id)+(1|abcd_site)+household.income,data=abcd.data.test))
+
+
+summary(lmer(monitoring~interview_age+sex+(1|rel_family_id)+(1|abcd_site)+household.income,data=abcd.data.test))
+summary(lmer(warmth~interview_age+sex+(1|rel_family_id)+(1|abcd_site)+household.income,data=abcd.data.test))
+
+
+
+summary(lmer(thompson_PC1~interview_age+sex+(1|rel_family_id)+(1|abcd_site)+household.income,data=abcd.data.test))
+summary(lmer(thompson_PC1~interview_age+sex+(1|rel_family_id)+(1|abcd_site)+household.income+monitoring,data=abcd.data.test))
+bs_indir = c()
+for (i in 1:1000){
+  thisSample <- sample(c(1:length(abcd.data.test$subjectkey)),length(abcd.data.test$subjectkey),replace=TRUE)
+  pathc<-lmer(thompson_PC1~interview_age+sex+(1|rel_family_id)+(1|abcd_site)+household.income,data=abcd.data.test[thisSample,])
+  pathcp<-lmer(thompson_PC1~interview_age+sex+(1|rel_family_id)+(1|abcd_site)+household.income+monitoring,data=abcd.data.test[thisSample,])
+  indir<-fixef(pathc)[5]-fixef(pathcp)[5]
+  bs_indir <- c(bs_indir,indir)
+}
+t.test(bs_indir,conf.level=0.95)
+# t = 139.74, df = 999, p-value < 2.2e-16
+# alternative hypothesis: true mean is not equal to 0
+# 95 percent confidence interval:
+#  0.4791434 0.4927918
+# sample estimates:
+# mean of x 
+# 0.4859676 
+
+
+
+summary(lmer(thompson_PC2~interview_age+sex+(1|rel_family_id)+(1|abcd_site)+household.income,data=abcd.data.test))
+summary(lmer(thompson_PC2~interview_age+sex+(1|rel_family_id)+(1|abcd_site)+household.income+monitoring,data=abcd.data.test))
+bs_indir = c()
+for (i in 1:1000){
+  thisSample <- sample(c(1:length(abcd.data.test$subjectkey)),length(abcd.data.test$subjectkey),replace=TRUE)
+  pathc<-lmer(thompson_PC2~interview_age+sex+(1|rel_family_id)+(1|abcd_site)+household.income,data=abcd.data.test[thisSample,])
+  pathcp<-lmer(thompson_PC2~interview_age+sex+(1|rel_family_id)+(1|abcd_site)+household.income+monitoring,data=abcd.data.test[thisSample,])
+  indir<-fixef(pathc)[5]-fixef(pathcp)[5]
+  bs_indir <- c(bs_indir,indir)
+}
+t.test(bs_indir,conf.level=0.95)
+# t = 91.84, df = 999, p-value < 2.2e-16
+# alternative hypothesis: true mean is not equal to 0
+# 95 percent confidence interval:
+#  0.3852340 0.4020561
+# sample estimates:
+# mean of x 
+#  0.393645 
+
+
+
+summary(lmer(thompson_PC3~interview_age+sex+(1|rel_family_id)+(1|abcd_site)+household.income,data=abcd.data.test))
+summary(lmer(thompson_PC3~interview_age+sex+(1|rel_family_id)+(1|abcd_site)+household.income+monitoring,data=abcd.data.test))
+bs_indir = c()
+for (i in 1:1000){
+  thisSample <- sample(c(1:length(abcd.data.test$subjectkey)),length(abcd.data.test$subjectkey),replace=TRUE)
+  pathc<-lmer(thompson_PC3~interview_age+sex+(1|rel_family_id)+(1|abcd_site)+household.income,data=abcd.data.test[thisSample,])
+  pathcp<-lmer(thompson_PC3~interview_age+sex+(1|rel_family_id)+(1|abcd_site)+household.income+monitoring,data=abcd.data.test[thisSample,])
+  indir<-fixef(pathc)[5]-fixef(pathcp)[5]
+  bs_indir <- c(bs_indir,indir)
+}
+t.test(bs_indir,conf.level=0.95)
+# t = 111.61, df = 999, p-value < 2.2e-16
+# alternative hypothesis: true mean is not equal to 0
+# 95 percent confidence interval:
+#  0.4880340 0.5055023
+# sample estimates:
+# mean of x 
+# 0.4967681 
+```
+
+
