@@ -127,7 +127,11 @@ abcd.data$warmth <- rowMeans(data.frame(as.numeric(abcd.data$crpbi_parent1_y),as
 abcd.data$monitoring <- rowMeans(data.frame(as.numeric(abcd.data$parent_monitor_q1_y),as.numeric(abcd.data$parent_monitor_q2_y),as.numeric(abcd.data$parent_monitor_q3_y),as.numeric(abcd.data$parent_monitor_q4_y),as.numeric(abcd.data$parent_monitor_q5_y)))
 
 # make sure monitoring and acceptance are on the same scale so we can compare effect sizes:
-abcd.data$warmth<-(((abcd.data$warmth-1)/2)*4)+1
+#abcd.data$warmth<-(((abcd.data$warmth-1)/2)*4)+1
+
+# Replace this rescaling with z-scoring ^
+abcd.data$warmth<-((abcd.data$warmth-mean(abcd.data$warmth,na.rm=TRUE))/sd(abcd.data$warmth,na.rm=TRUE))
+abcd.data$monitoring<-((abcd.data$monitoring-mean(abcd.data$monitoring,na.rm=TRUE))/sd(abcd.data$monitoring,na.rm=TRUE))
 
 # n=10,966
 ```
@@ -161,62 +165,95 @@ abcd.data.test <- abcd.data.traintest[abcd.data.traintest$matched_group==2,] # 5
 ```
 
 
+# Make a demographics table
+```{r}
+library(Gmisc)
+demo_table <- abcd.data.traintest %>%
+  mutate(matched_group = factor(matched_group, levels = 1:2, labels = c("Discovery", "Replication"))) %>%
+#subset(matched_group<3) %>%
+  set_column_labels(interview_age = "Age (Months)",
+                    sex = "Sex",
+                    race.6level = "Race",
+                    household.income = "Household Income",
+                    monitoring = "Caregiver Monitoring",
+                    warmth = "Caregiver Warmth",
+                    thompson_PC1 = "General Cognition",
+                    thompson_PC2 = "Executive Function",
+                    thompson_PC3 = "Learning/Memory",
+                    high.educ = "Parent Education") %>%
+getDescriptionStatsBy(interview_age, 
+                        sex,
+                        thompson_PC1,
+                        thompson_PC2,
+                        thompson_PC3,
+                        monitoring,
+                        warmth,
+                        household.income,
+                        race.6level,
+                        high.educ,
+                        add_total_col = TRUE, statistics=TRUE,
+                        by = matched_group)
+
+demo_table
+```
+
+
 ## How do caregiving behaviors relate to cognition?
 ### Monitoring is positively related to all 3 cognitive variables but warmth is not
 ```{r}
 cor.test(abcd.data.train$warmth,abcd.data.train$monitoring) # they are correlated at r=0.362
 
-summary(lmer(thompson_PC1~interview_age+sex+(1|rel_family_id)+(1|abcd_site)+warmth+monitoring,data=abcd.data.train))
-summary(lmer(thompson_PC2~interview_age+sex+(1|rel_family_id)+(1|abcd_site)+warmth+monitoring,data=abcd.data.train))
-summary(lmer(thompson_PC3~interview_age+sex+(1|rel_family_id)+(1|abcd_site)+warmth+monitoring,data=abcd.data.train))
+summary(lmer(thompson_PC1~interview_age+sex+(1|rel_family_id)+(1|abcd_site)+household.income+warmth+monitoring,data=abcd.data.train))
+summary(lmer(thompson_PC2~interview_age+sex+(1|rel_family_id)+(1|abcd_site)+household.income+warmth+monitoring,data=abcd.data.train))
+summary(lmer(thompson_PC3~interview_age+sex+(1|rel_family_id)+(1|abcd_site)+household.income+warmth+monitoring,data=abcd.data.train))
 
-summary(lmer(thompson_PC1~interview_age+sex+(1|rel_family_id)+(1|abcd_site)+warmth,data=abcd.data.train))
-summary(lmer(thompson_PC2~interview_age+sex+(1|rel_family_id)+(1|abcd_site)+warmth,data=abcd.data.train))
-summary(lmer(thompson_PC3~interview_age+sex+(1|rel_family_id)+(1|abcd_site)+warmth,data=abcd.data.train))
+summary(lmer(thompson_PC1~interview_age+sex+(1|rel_family_id)+(1|abcd_site)+household.income+warmth,data=abcd.data.train))
+summary(lmer(thompson_PC2~interview_age+sex+(1|rel_family_id)+(1|abcd_site)+household.income+warmth,data=abcd.data.train))
+summary(lmer(thompson_PC3~interview_age+sex+(1|rel_family_id)+(1|abcd_site)+household.income+warmth,data=abcd.data.train))
 
-summary(lmer(thompson_PC1~interview_age+sex+(1|rel_family_id)+(1|abcd_site)+monitoring,data=abcd.data.train))
-summary(lmer(thompson_PC2~interview_age+sex+(1|rel_family_id)+(1|abcd_site)+monitoring,data=abcd.data.train))
-summary(lmer(thompson_PC3~interview_age+sex+(1|rel_family_id)+(1|abcd_site)+monitoring,data=abcd.data.train))
+summary(lmer(thompson_PC1~interview_age+sex+(1|rel_family_id)+(1|abcd_site)+household.income+monitoring,data=abcd.data.train))
+summary(lmer(thompson_PC2~interview_age+sex+(1|rel_family_id)+(1|abcd_site)+household.income+monitoring,data=abcd.data.train))
+summary(lmer(thompson_PC3~interview_age+sex+(1|rel_family_id)+(1|abcd_site)+household.income+monitoring,data=abcd.data.train))
 
 # Get effect sizes
-model1<-anova(lmer(thompson_PC1~interview_age+sex+(1|rel_family_id)+(1|abcd_site)+warmth+monitoring,data=abcd.data.train))
+model1<-anova(lmer(thompson_PC1~interview_age+sex+(1|rel_family_id)+(1|abcd_site)+household.income+warmth+monitoring,data=abcd.data.train))
 eta2_w <- F_to_eta2(model1[3,]$`F value`,model1[3,]$NumDF,model1[3,]$DenDF)
 eta2_m <- F_to_eta2(model1[4,]$`F value`,model1[4,]$NumDF,model1[4,]$DenDF)
-model1<-anova(lmer(thompson_PC2~interview_age+sex+(1|rel_family_id)+(1|abcd_site)+warmth+monitoring,data=abcd.data.train))
+model1<-anova(lmer(thompson_PC2~interview_age+sex+(1|rel_family_id)+(1|abcd_site)+household.income+warmth+monitoring,data=abcd.data.train))
 eta2_w <- F_to_eta2(model1[3,]$`F value`,model1[3,]$NumDF,model1[3,]$DenDF)
 eta2_m <- F_to_eta2(model1[4,]$`F value`,model1[4,]$NumDF,model1[4,]$DenDF)
-model1<-anova(lmer(thompson_PC3~interview_age+sex+(1|rel_family_id)+(1|abcd_site)+warmth+monitoring,data=abcd.data.train))
+model1<-anova(lmer(thompson_PC3~interview_age+sex+(1|rel_family_id)+(1|abcd_site)+household.income+warmth+monitoring,data=abcd.data.train))
 eta2_w <- F_to_eta2(model1[3,]$`F value`,model1[3,]$NumDF,model1[3,]$DenDF)
 eta2_m <- F_to_eta2(model1[4,]$`F value`,model1[4,]$NumDF,model1[4,]$DenDF)
 
-model1<-anova(lmer(thompson_PC1~interview_age+sex+(1|rel_family_id)+(1|abcd_site)+warmth,data=abcd.data.train))
+model1<-anova(lmer(thompson_PC1~interview_age+sex+(1|rel_family_id)+(1|abcd_site)+household.income+warmth,data=abcd.data.train))
 eta2 <- F_to_eta2(model1[3,]$`F value`,model1[3,]$NumDF,model1[3,]$DenDF)
-model1<-anova(lmer(thompson_PC2~interview_age+sex+(1|rel_family_id)+(1|abcd_site)+warmth,data=abcd.data.train))
+model1<-anova(lmer(thompson_PC2~interview_age+sex+(1|rel_family_id)+(1|abcd_site)+household.income+warmth,data=abcd.data.train))
 eta2 <- F_to_eta2(model1[3,]$`F value`,model1[3,]$NumDF,model1[3,]$DenDF)
-model1<-anova(lmer(thompson_PC3~interview_age+sex+(1|rel_family_id)+(1|abcd_site)+warmth,data=abcd.data.train))
+model1<-anova(lmer(thompson_PC3~interview_age+sex+(1|rel_family_id)+(1|abcd_site)+household.income+warmth,data=abcd.data.train))
 eta2 <- F_to_eta2(model1[3,]$`F value`,model1[3,]$NumDF,model1[3,]$DenDF)
 
-model1<-anova(lmer(thompson_PC1~interview_age+sex+(1|rel_family_id)+(1|abcd_site)+monitoring,data=abcd.data.train))
+model1<-anova(lmer(thompson_PC1~interview_age+sex+(1|rel_family_id)+(1|abcd_site)+household.income+monitoring,data=abcd.data.train))
 eta2 <- F_to_eta2(model1[3,]$`F value`,model1[3,]$NumDF,model1[3,]$DenDF)
-model1<-anova(lmer(thompson_PC2~interview_age+sex+(1|rel_family_id)+(1|abcd_site)+monitoring,data=abcd.data.train))
+model1<-anova(lmer(thompson_PC2~interview_age+sex+(1|rel_family_id)+(1|abcd_site)+household.income+monitoring,data=abcd.data.train))
 eta2 <- F_to_eta2(model1[3,]$`F value`,model1[3,]$NumDF,model1[3,]$DenDF)
-model1<-anova(lmer(thompson_PC3~interview_age+sex+(1|rel_family_id)+(1|abcd_site)+monitoring,data=abcd.data.train))
+model1<-anova(lmer(thompson_PC3~interview_age+sex+(1|rel_family_id)+(1|abcd_site)+household.income+monitoring,data=abcd.data.train))
 eta2 <- F_to_eta2(model1[3,]$`F value`,model1[3,]$NumDF,model1[3,]$DenDF)
 
 
 # Print models to table
-mod1<-lmer(thompson_PC1~interview_age+sex+(1|rel_family_id)+(1|abcd_site)+warmth+monitoring,data=abcd.data.train)
-mod2<-lmer(thompson_PC2~interview_age+sex+(1|rel_family_id)+(1|abcd_site)+warmth+monitoring,data=abcd.data.train)
-mod3<-lmer(thompson_PC3~interview_age+sex+(1|rel_family_id)+(1|abcd_site)+warmth+monitoring,data=abcd.data.train)
-mod4<-lmer(thompson_PC1~interview_age+sex+(1|rel_family_id)+(1|abcd_site)+warmth,data=abcd.data.train)
-mod5<-lmer(thompson_PC2~interview_age+sex+(1|rel_family_id)+(1|abcd_site)+warmth,data=abcd.data.train)
-mod6<-lmer(thompson_PC3~interview_age+sex+(1|rel_family_id)+(1|abcd_site)+warmth,data=abcd.data.train)
-mod7<-lmer(thompson_PC1~interview_age+sex+(1|rel_family_id)+(1|abcd_site)+monitoring,data=abcd.data.train)
-mod8<-lmer(thompson_PC2~interview_age+sex+(1|rel_family_id)+(1|abcd_site)+monitoring,data=abcd.data.train)
-mod9<-lmer(thompson_PC3~interview_age+sex+(1|rel_family_id)+(1|abcd_site)+monitoring,data=abcd.data.train)
-tab_model(mod1,mod2,mod3,pred.labels = c("Intercept","Age","Sex","Warmth","Monitoring"),dv.labels=c("General Cognition","Executive Function","Learning/Memory"),digits=2,digits.p=2,show.se=TRUE,show.stat=TRUE,string.stat = "t",string.se = "Std. Error",show.intercept=TRUE,show.ci = FALSE, p.adjust="bonferroni",p.style="scientific",file = "/Users/ariellekeller/Documents/Writing_InProgress/ParentalMonitoring_Cognition/Warmth_Monitoring_TableX.doc")
-tab_model(mod4,mod5,mod6,pred.labels = c("Intercept","Age","Sex","Warmth"),dv.labels=c("General Cognition","Executive Function","Learning/Memory"),digits=2,digits.p=2,show.se=TRUE,show.stat=TRUE,string.stat = "t",string.se = "Std. Error",show.intercept=TRUE,show.ci = FALSE, p.adjust="bonferroni",p.style="scientific", file = "/Users/ariellekeller/Documents/Writing_InProgress/ParentalMonitoring_Cognition/Warmth_TableX.doc")
-tab_model(mod7,mod8,mod9,pred.labels = c("Intercept","Age","Sex","Monitoring"),dv.labels=c("General Cognition","Executive Function","Learning/Memory"),digits=2,digits.p=2,show.se=TRUE,show.stat=TRUE,string.stat = "t",string.se = "Std. Error",show.intercept=TRUE,show.ci = FALSE, p.adjust="bonferroni",p.style="scientific", file = "/Users/ariellekeller/Documents/Writing_InProgress/ParentalMonitoring_Cognition/Monitoring_TableX.doc")
+mod1<-lmer(thompson_PC1~interview_age+sex+(1|rel_family_id)+(1|abcd_site)+household.income+warmth+monitoring,data=abcd.data.train)
+mod2<-lmer(thompson_PC2~interview_age+sex+(1|rel_family_id)+(1|abcd_site)+household.income+warmth+monitoring,data=abcd.data.train)
+mod3<-lmer(thompson_PC3~interview_age+sex+(1|rel_family_id)+(1|abcd_site)+household.income+warmth+monitoring,data=abcd.data.train)
+mod4<-lmer(thompson_PC1~interview_age+sex+(1|rel_family_id)+(1|abcd_site)+household.income+warmth,data=abcd.data.train)
+mod5<-lmer(thompson_PC2~interview_age+sex+(1|rel_family_id)+(1|abcd_site)+household.income+warmth,data=abcd.data.train)
+mod6<-lmer(thompson_PC3~interview_age+sex+(1|rel_family_id)+(1|abcd_site)+household.income+warmth,data=abcd.data.train)
+mod7<-lmer(thompson_PC1~interview_age+sex+(1|rel_family_id)+(1|abcd_site)+household.income+monitoring,data=abcd.data.train)
+mod8<-lmer(thompson_PC2~interview_age+sex+(1|rel_family_id)+(1|abcd_site)+household.income+monitoring,data=abcd.data.train)
+mod9<-lmer(thompson_PC3~interview_age+sex+(1|rel_family_id)+(1|abcd_site)+household.income+monitoring,data=abcd.data.train)
+tab_model(mod1,mod2,mod3,pred.labels = c("Intercept","Age","Sex","Warmth","Monitoring"),dv.labels=c("General Cognition","Executive Function","Learning/Memory"),digits=2,digits.p=2,show.se=TRUE,show.stat=TRUE,string.stat = "t",string.se = "Std. Error",show.intercept=TRUE,show.ci = FALSE, p.adjust="bonferroni",p.style="numeric",file = "/Users/ariellekeller/Documents/Writing_InProgress/ParentalMonitoring_Cognition/Warmth_Monitoring_TableX.doc")
+tab_model(mod4,mod5,mod6,pred.labels = c("Intercept","Age","Sex","Warmth"),dv.labels=c("General Cognition","Executive Function","Learning/Memory"),digits=2,digits.p=2,show.se=TRUE,show.stat=TRUE,string.stat = "t",string.se = "Std. Error",show.intercept=TRUE,show.ci = FALSE, p.adjust="bonferroni",p.style="numeric", file = "/Users/ariellekeller/Documents/Writing_InProgress/ParentalMonitoring_Cognition/Warmth_TableX.doc")
+tab_model(mod7,mod8,mod9,pred.labels = c("Intercept","Age","Sex","Monitoring"),dv.labels=c("General Cognition","Executive Function","Learning/Memory"),digits=2,digits.p=2,show.se=TRUE,show.stat=TRUE,string.stat = "t",string.se = "Std. Error",show.intercept=TRUE,show.ci = FALSE, p.adjust="bonferroni",p.style="numeric", file = "/Users/ariellekeller/Documents/Writing_InProgress/ParentalMonitoring_Cognition/Monitoring_TableX.doc")
 ```
 
 
@@ -513,11 +550,27 @@ ggplot(data=subset(abcd.data.train,!is.na(household.income)),aes(household.incom
 panel.background = element_blank(), axis.line = element_line(colour = "black")) +ylab('General Cognition') + xlab('Household Income')
 dev.off() 
 
+png("/Users/ariellekeller/Documents/Writing_InProgress/ParentalMonitoring_Cognition/SES_PC1_violin.png",
+    width = 4000, 
+    height = 3000,
+    res=1000)
+ggplot(data=subset(abcd.data.train,!is.na(household.income)),aes(household.income,thompson_PC1))+geom_violin(aes(household.income,thompson_PC1),fill=rgb(33/255,80/255,113/255),trim=FALSE)+geom_boxplot(aes(household.income,thompson_PC1),width=0.2)+coord_cartesian(ylim = c(160, 320))+ theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank(),
+panel.background = element_blank(), axis.line = element_line(colour = "black")) +ylab('General Cognition') + xlab('Household Income')
+dev.off() 
+
 png("/Users/ariellekeller/Documents/Writing_InProgress/ParentalMonitoring_Cognition/SES_PC2.png",
     width = 4000, 
     height = 3000,
     res=1000)
 ggplot(data=subset(abcd.data.train,!is.na(household.income)),aes(household.income,thompson_PC2))+geom_boxplot(aes(household.income,thompson_PC2),color=rgb(64/255,141/255,151/255))+coord_cartesian(ylim = c(170, 320))+ theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank(),
+panel.background = element_blank(), axis.line = element_line(colour = "black")) +ylab('Executive Function') + xlab('Household Income')
+dev.off() 
+
+png("/Users/ariellekeller/Documents/Writing_InProgress/ParentalMonitoring_Cognition/SES_PC2_violin.png",
+    width = 4000, 
+    height = 3000,
+    res=1000)
+ggplot(data=subset(abcd.data.train,!is.na(household.income)),aes(household.income,thompson_PC2))+geom_violin(aes(household.income,thompson_PC2),fill=rgb(64/255,141/255,151/255),trim=FALSE)+geom_boxplot(aes(household.income,thompson_PC2),width=0.2)+coord_cartesian(ylim = c(160, 320))+ theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank(),
 panel.background = element_blank(), axis.line = element_line(colour = "black")) +ylab('Executive Function') + xlab('Household Income')
 dev.off() 
 
@@ -530,49 +583,58 @@ panel.background = element_blank(), axis.line = element_line(colour = "black")) 
 dev.off() 
 
 
+png("/Users/ariellekeller/Documents/Writing_InProgress/ParentalMonitoring_Cognition/SES_PC3_violin.png",
+    width = 4000, 
+    height = 3000,
+    res=1000)
+ggplot(data=subset(abcd.data.train,!is.na(household.income)),aes(household.income,thompson_PC3))+geom_violin(aes(household.income,thompson_PC3),fill=rgb(157/255,207/255,160/255),trim=FALSE)+geom_boxplot(aes(household.income,thompson_PC3),width=0.2)+coord_cartesian(ylim = c(160, 320))+ theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank(),
+panel.background = element_blank(), axis.line = element_line(colour = "black")) +ylab('Learning/Memory') + xlab('Household Income')
+dev.off() 
+
+
 
 png("/Users/ariellekeller/Documents/Writing_InProgress/ParentalMonitoring_Cognition/Monitoring_PC1.png",
-    width = 2500, 
-    height = 3000,
-    res=700)
-ggplot(data=abcd.data.train,aes(monitoring,thompson_PC1))+geom_point(position="jitter",size=1,colour=rgb(33/255,80/255,113/255))+geom_smooth(method=lm,colour='black')+ theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank(),panel.background = element_blank(), axis.line = element_line(colour = "black")) +ylab('General Cognition') + xlab('Monitoring')
+    width = 2600, 
+    height = 3100,
+    res=800)
+ggplot(data=abcd.data.train,aes(monitoring,thompson_PC1))+geom_point(position="jitter",size=1,colour=rgb(33/255,80/255,113/255))+geom_smooth(method=lm,colour='black')+ theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank(),panel.background = element_blank(), axis.line = element_line(colour = "black")) +ylab('General Cognition') + xlab('Monitoring (z)')
 dev.off() 
 
 png("/Users/ariellekeller/Documents/Writing_InProgress/ParentalMonitoring_Cognition/Monitoring_PC2.png",
-    width = 2500, 
-    height = 3000,
-    res=700)
-ggplot(data=abcd.data.train,aes(monitoring,thompson_PC2))+geom_point(position="jitter",size=1,colour=rgb(64/255,141/255,151/255))+geom_smooth(method=lm,colour='black')+ theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank(),panel.background = element_blank(), axis.line = element_line(colour = "black")) +ylab('Executive Function') + xlab('Monitoring')
+    width = 2600, 
+    height = 3100,
+    res=800)
+ggplot(data=abcd.data.train,aes(monitoring,thompson_PC2))+geom_point(position="jitter",size=1,colour=rgb(64/255,141/255,151/255))+geom_smooth(method=lm,colour='black')+ theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank(),panel.background = element_blank(), axis.line = element_line(colour = "black")) +ylab('Executive Function') + xlab('Monitoring (z)')
 dev.off() 
 
 png("/Users/ariellekeller/Documents/Writing_InProgress/ParentalMonitoring_Cognition/Monitoring_PC3.png",
-    width = 2500, 
-    height = 3000,
-    res=700)
-ggplot(data=abcd.data.train,aes(monitoring,thompson_PC3))+geom_point(position="jitter",size=1,colour=rgb(157/255,207/255,160/255))+geom_smooth(method=lm,colour='black')+ theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank(),panel.background = element_blank(), axis.line = element_line(colour = "black")) +ylab('Learning/Memory') + xlab('Monitoring')
+    width = 2600, 
+    height = 3100,
+    res=800)
+ggplot(data=abcd.data.train,aes(monitoring,thompson_PC3))+geom_point(position="jitter",size=1,colour=rgb(157/255,207/255,160/255))+geom_smooth(method=lm,colour='black')+ theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank(),panel.background = element_blank(), axis.line = element_line(colour = "black")) +ylab('Learning/Memory') + xlab('Monitoring (z)')
 dev.off() 
 
 
 
 png("/Users/ariellekeller/Documents/Writing_InProgress/ParentalMonitoring_Cognition/Warmth_PC1.png",
-    width = 2500, 
-    height = 3000,
-    res=700)
-ggplot(data=abcd.data.train,aes(warmth,thompson_PC1))+geom_point(position="jitter",size=1,colour=rgb(33/255,80/255,113/255))+geom_smooth(method=lm,colour='black')+ theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank(),panel.background = element_blank(), axis.line = element_line(colour = "black")) +ylab('General Cognition') + xlab('Warmth')
+    width = 2600, 
+    height = 3100,
+    res=800)
+ggplot(data=abcd.data.train,aes(warmth,thompson_PC1))+geom_point(position="jitter",size=1,colour=rgb(33/255,80/255,113/255))+geom_smooth(method=lm,colour='black')+ theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank(),panel.background = element_blank(), axis.line = element_line(colour = "black")) +ylab('General Cognition') + xlab('Warmth (z)')
 dev.off() 
 
 png("/Users/ariellekeller/Documents/Writing_InProgress/ParentalMonitoring_Cognition/Warmth_PC2.png",
-    width = 2500, 
-    height = 3000,
-    res=700)
-ggplot(data=abcd.data.train,aes(warmth,thompson_PC2))+geom_point(position="jitter",size=1,colour=rgb(64/255,141/255,151/255))+geom_smooth(method=lm,colour='black')+ theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank(),panel.background = element_blank(), axis.line = element_line(colour = "black")) +ylab('Executive Function') + xlab('Warmth')
+    width = 2600, 
+    height = 3100,
+    res=800)
+ggplot(data=abcd.data.train,aes(warmth,thompson_PC2))+geom_point(position="jitter",size=1,colour=rgb(64/255,141/255,151/255))+geom_smooth(method=lm,colour='black')+ theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank(),panel.background = element_blank(), axis.line = element_line(colour = "black")) +ylab('Executive Function') + xlab('Warmth (z)')
 dev.off() 
 
 png("/Users/ariellekeller/Documents/Writing_InProgress/ParentalMonitoring_Cognition/Warmth_PC3.png",
-    width = 2500, 
-    height = 3000,
-    res=700)
-ggplot(data=abcd.data.train,aes(warmth,thompson_PC3))+geom_point(position="jitter",size=1,colour=rgb(157/255,207/255,160/255))+geom_smooth(method=lm,colour='black')+ theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank(),panel.background = element_blank(), axis.line = element_line(colour = "black")) +ylab('Learning/Memory') + xlab('Warmth')
+    width = 2600, 
+    height = 3100,
+    res=800)
+ggplot(data=abcd.data.train,aes(warmth,thompson_PC3))+geom_point(position="jitter",size=1,colour=rgb(157/255,207/255,160/255))+geom_smooth(method=lm,colour='black')+ theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank(),panel.background = element_blank(), axis.line = element_line(colour = "black")) +ylab('Learning/Memory') + xlab('Warmth (z)')
 dev.off() 
 
 
@@ -589,7 +651,7 @@ png("/Users/ariellekeller/Documents/Writing_InProgress/ParentalMonitoring_Cognit
     width = 4000, 
     height = 2000,
     res=700)
-ggplot(data=df.summary,aes(household.income,warmth,fill=as.factor(household.income)))+geom_bar(position = "dodge",stat = "identity")+coord_cartesian(ylim = c(3.5, 5))+ theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank(),panel.background = element_blank(), axis.line = element_line(colour = "black")) +ylab('Warmth') + xlab('Household Income') + scale_fill_manual(values = c(rgb(145/255,69/255,93/255),rgb(206/255,118/255,119/255),rgb(227/255,180/255,150/255))) + geom_errorbar(aes(ymin=warmth-se, ymax=warmth+se), width=.2,position=position_dodge(.9))
+ggplot(data=df.summary,aes(household.income,warmth,fill=as.factor(household.income)))+geom_bar(position = "dodge",stat = "identity")+coord_cartesian(ylim = c(-0.25, 0.25))+ theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank(),panel.background = element_blank(), axis.line = element_line(colour = "black")) +ylab('Warmth (z)') + xlab('Household Income') + scale_fill_manual(values = c(rgb(145/255,69/255,93/255),rgb(206/255,118/255,119/255),rgb(227/255,180/255,150/255))) + geom_errorbar(aes(ymin=warmth-se, ymax=warmth+se), width=.2,position=position_dodge(.9))
 dev.off() 
 
 df.summary <- subset(abcd.data.train,!is.na(household.income)) %>%
@@ -601,8 +663,17 @@ png("/Users/ariellekeller/Documents/Writing_InProgress/ParentalMonitoring_Cognit
     width = 4000, 
     height = 2000,
     res=700)
-ggplot(data=df.summary,aes(household.income,monitoring,fill=as.factor(household.income)))+geom_bar(position = "dodge",stat = "identity")+coord_cartesian(ylim = c(3.5, 5))+ theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank(),panel.background = element_blank(), axis.line = element_line(colour = "black")) +ylab('Monitoring') + xlab('Household Income') + scale_fill_manual(values = c(rgb(145/255,69/255,93/255),rgb(206/255,118/255,119/255),rgb(227/255,180/255,150/255))) + geom_errorbar(aes(ymin=monitoring-se, ymax=monitoring+se), width=.2,position=position_dodge(.9))
+ggplot(data=df.summary,aes(household.income,monitoring,fill=as.factor(household.income)))+geom_bar(position = "dodge",stat = "identity")+coord_cartesian(ylim = c(-0.25, 0.25))+ theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank(),panel.background = element_blank(), axis.line = element_line(colour = "black")) +ylab('Monitoring (z)') + xlab('Household Income') + scale_fill_manual(values = c(rgb(145/255,69/255,93/255),rgb(206/255,118/255,119/255),rgb(227/255,180/255,150/255))) + geom_errorbar(aes(ymin=monitoring-se, ymax=monitoring+se), width=.2,position=position_dodge(.9))
 dev.off() 
+
+
+save_train_data<-data.frame(abcd.data.train$thompson_PC1,abcd.data.train$thompson_PC2,abcd.data.train$thompson_PC3,abcd.data.train$warmth,abcd.data.train$monitoring)
+save_test_data<-data.frame(abcd.data.test$thompson_PC1,abcd.data.test$thompson_PC2,abcd.data.test$thompson_PC3,abcd.data.test$warmth,abcd.data.test$monitoring)
+write.csv(save_train_data,"/Users/ariellekeller/Documents/Writing_InProgress/ParentalMonitoring_Cognition/traintest_figs/data_from_R_train.csv")
+write.csv(save_test_data,"/Users/ariellekeller/Documents/Writing_InProgress/ParentalMonitoring_Cognition/traintest_figs/data_from_R_test.csv")
+
+
+
 ```
 
 
@@ -694,3 +765,106 @@ t.test(bs_indir,conf.level=0.95)
 ```
 
 
+
+
+# Generate Figures - TEST DATA
+```{r}
+png("/Users/ariellekeller/Documents/Writing_InProgress/ParentalMonitoring_Cognition/SES_PC1_test.png",
+    width = 4000, 
+    height = 3000,
+    res=1000)
+ggplot(data=subset(abcd.data.test,!is.na(household.income)),aes(household.income,thompson_PC1))+geom_boxplot(aes(household.income,thompson_PC1),color=rgb(33/255,80/255,113/255))+coord_cartesian(ylim = c(170, 320))+ theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank(),
+panel.background = element_blank(), axis.line = element_line(colour = "black")) +ylab('General Cognition') + xlab('Household Income')
+dev.off() 
+
+png("/Users/ariellekeller/Documents/Writing_InProgress/ParentalMonitoring_Cognition/SES_PC2_test.png",
+    width = 4000, 
+    height = 3000,
+    res=1000)
+ggplot(data=subset(abcd.data.test,!is.na(household.income)),aes(household.income,thompson_PC2))+geom_boxplot(aes(household.income,thompson_PC2),color=rgb(64/255,141/255,151/255))+coord_cartesian(ylim = c(170, 320))+ theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank(),
+panel.background = element_blank(), axis.line = element_line(colour = "black")) +ylab('Executive Function') + xlab('Household Income')
+dev.off() 
+
+png("/Users/ariellekeller/Documents/Writing_InProgress/ParentalMonitoring_Cognition/SES_PC3_test.png",
+    width = 4000, 
+    height = 3000,
+    res=1000)
+ggplot(data=subset(abcd.data.test,!is.na(household.income)),aes(household.income,thompson_PC3))+geom_boxplot(aes(household.income,thompson_PC3),color=rgb(157/255,207/255,160/255))+coord_cartesian(ylim = c(170, 320))+ theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank(),
+panel.background = element_blank(), axis.line = element_line(colour = "black")) +ylab('Learning/Memory') + xlab('Household Income')
+dev.off() 
+
+
+
+png("/Users/ariellekeller/Documents/Writing_InProgress/ParentalMonitoring_Cognition/Monitoring_PC1_test.png",
+    width = 2600, 
+    height = 3100,
+    res=800)
+ggplot(data=abcd.data.test,aes(monitoring,thompson_PC1))+geom_point(position="jitter",size=1,colour=rgb(33/255,80/255,113/255))+geom_smooth(method=lm,colour='black')+ theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank(),panel.background = element_blank(), axis.line = element_line(colour = "black")) +ylab('General Cognition') + xlab('Monitoring (z)')
+dev.off() 
+
+png("/Users/ariellekeller/Documents/Writing_InProgress/ParentalMonitoring_Cognition/Monitoring_PC2_test.png",
+    width = 2600, 
+    height = 3100,
+    res=800)
+ggplot(data=abcd.data.test,aes(monitoring,thompson_PC2))+geom_point(position="jitter",size=1,colour=rgb(64/255,141/255,151/255))+geom_smooth(method=lm,colour='black')+ theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank(),panel.background = element_blank(), axis.line = element_line(colour = "black")) +ylab('Executive Function') + xlab('Monitoring (z)')
+dev.off() 
+
+png("/Users/ariellekeller/Documents/Writing_InProgress/ParentalMonitoring_Cognition/Monitoring_PC3_test.png",
+    width = 2600, 
+    height = 3100,
+    res=800)
+ggplot(data=abcd.data.test,aes(monitoring,thompson_PC3))+geom_point(position="jitter",size=1,colour=rgb(157/255,207/255,160/255))+geom_smooth(method=lm,colour='black')+ theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank(),panel.background = element_blank(), axis.line = element_line(colour = "black")) +ylab('Learning/Memory') + xlab('Monitoring (z)')
+dev.off() 
+
+
+
+png("/Users/ariellekeller/Documents/Writing_InProgress/ParentalMonitoring_Cognition/Warmth_PC1_test.png",
+    width = 2600, 
+    height = 3100,
+    res=800)
+ggplot(data=abcd.data.test,aes(warmth,thompson_PC1))+geom_point(position="jitter",size=1,colour=rgb(33/255,80/255,113/255))+geom_smooth(method=lm,colour='black')+ theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank(),panel.background = element_blank(), axis.line = element_line(colour = "black")) +ylab('General Cognition') + xlab('Warmth (z)')
+dev.off() 
+
+png("/Users/ariellekeller/Documents/Writing_InProgress/ParentalMonitoring_Cognition/Warmth_PC2_test.png",
+    width = 2600, 
+    height = 3100,
+    res=800)
+ggplot(data=abcd.data.test,aes(warmth,thompson_PC2))+geom_point(position="jitter",size=1,colour=rgb(64/255,141/255,151/255))+geom_smooth(method=lm,colour='black')+ theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank(),panel.background = element_blank(), axis.line = element_line(colour = "black")) +ylab('Executive Function') + xlab('Warmth (z)')
+dev.off() 
+
+png("/Users/ariellekeller/Documents/Writing_InProgress/ParentalMonitoring_Cognition/Warmth_PC3_test.png",
+    width = 2600, 
+    height = 3100,
+    res=800)
+ggplot(data=abcd.data.test,aes(warmth,thompson_PC3))+geom_point(position="jitter",size=1,colour=rgb(157/255,207/255,160/255))+geom_smooth(method=lm,colour='black')+ theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank(),panel.background = element_blank(), axis.line = element_line(colour = "black")) +ylab('Learning/Memory') + xlab('Warmth (z)')
+dev.off() 
+
+
+
+
+
+
+df.summary <- subset(abcd.data.test,!is.na(household.income)) %>%
+     group_by(household.income) %>%
+     summarise(
+         se = sd(warmth, na.rm = TRUE)/sqrt(length(warmth)),
+         warmth = mean(warmth,na.rm=TRUE))
+png("/Users/ariellekeller/Documents/Writing_InProgress/ParentalMonitoring_Cognition/Warmth_SES_test.png",
+    width = 4000, 
+    height = 2000,
+    res=700)
+ggplot(data=df.summary,aes(household.income,warmth,fill=as.factor(household.income)))+geom_bar(position = "dodge",stat = "identity")+coord_cartesian(ylim = c(3.5, 5))+ theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank(),panel.background = element_blank(), axis.line = element_line(colour = "black")) +ylab('Warmth') + xlab('Household Income') + scale_fill_manual(values = c(rgb(145/255,69/255,93/255),rgb(206/255,118/255,119/255),rgb(227/255,180/255,150/255))) + geom_errorbar(aes(ymin=warmth-se, ymax=warmth+se), width=.2,position=position_dodge(.9))
+dev.off() 
+
+df.summary <- subset(abcd.data.test,!is.na(household.income)) %>%
+     group_by(household.income) %>%
+     summarise(
+         se = sd(monitoring, na.rm = TRUE)/sqrt(length(monitoring)),
+         monitoring = mean(monitoring,na.rm=TRUE))
+png("/Users/ariellekeller/Documents/Writing_InProgress/ParentalMonitoring_Cognition/Monitoring_SES_test.png",
+    width = 4000, 
+    height = 2000,
+    res=700)
+ggplot(data=df.summary,aes(household.income,monitoring,fill=as.factor(household.income)))+geom_bar(position = "dodge",stat = "identity")+coord_cartesian(ylim = c(3.5, 5))+ theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank(),panel.background = element_blank(), axis.line = element_line(colour = "black")) +ylab('Monitoring') + xlab('Household Income') + scale_fill_manual(values = c(rgb(145/255,69/255,93/255),rgb(206/255,118/255,119/255),rgb(227/255,180/255,150/255))) + geom_errorbar(aes(ymin=monitoring-se, ymax=monitoring+se), width=.2,position=position_dodge(.9))
+dev.off() 
+```
