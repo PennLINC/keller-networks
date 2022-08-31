@@ -56,7 +56,7 @@ Use the script pred_acc_by_PFN.m to save out R values by PFN and to generate bar
 Use the script pred_acc_by_PFN_workbench.R to take the results from pred_acc_by_PFN.m and convert them to .dscalar.nii files that can be read in by Connectome Workbench for plotting the brainmaps. 
 
 
-## Step 4: Association between prediction accuracy and S-A axis rank (Figures 5)
+## Step 4: Association between prediction accuracy and S-A axis rank (Figure 5)
 
 
 ### 4.1	Spin tests
