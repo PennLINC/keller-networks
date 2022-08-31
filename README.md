@@ -4,16 +4,11 @@ This pipeline will expect that PFNs have already been generated for each partici
 
 ## Step 1: Associations between total cortical representation and general cognition (Figure 2)
 
-### 1.1	Get TRs and mean FD
-
-First, use ExtractNumTRs.m to get the number of TRs for each participant saved as a .csv. Next, use get_motion_info.m to save the motion masks for each participant (which will call save_motion_mask.m) followed by get_meanFD.m to calculate the mean fractional displacement for every participant.
-
-
-### 1.2	Calculate total cortical representation
+### 1.1	Calculate total cortical representation
 
 Use calculate_PFN_size.m to take the output of the PFNs derivation (NMF) and calculate the total cortical representation (PFN “size”) as the sum of loadings for each PFN.
 
-### 1.3	Stats+Plotting
+### 1.2	Stats+Plotting
 
 Use the Rmarkdown Associations_PFN_Cognition.Rmd to compute associations between total cortical representation and general cognition and generate figures that replicate Cui et al. (2020). This file will also produce a demographics table. Note that data must be downloaded from NDA/DEAP prior to running this Rmarkdown. 
 
