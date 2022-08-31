@@ -1,0 +1,350 @@
+---
+title: "Cui2020Rep_SumWeightsBarPlots"
+output: html_document
+date: '2022-08-30'
+---
+
+# This is ASK's replication of Zaixu's script "Step_5th_SumWeights_EF.R" that 
+# will try to recapitulate Figure 7C in his 2020 Neuron paper showing the sum of 
+# the importance of topographic features by network. 
+
+# load in libraries
+```{r}
+library(R.matlab)
+library(ggplot2)
+```
+
+
+# PC1 - Discovery Sample
+```{r}
+# Set the folder with the results (note: results come from CuiRep_Step_4th_Weight_Visualize_Workbench_EFAccuracy_RandomCV.m)
+WeightFolder = '/Users/askeller/Documents/Kellernet_PrelimAnalysis/CuiRep_7C_SumLoadings/';
+Weight_EFAccuracy_Mat = readMat(paste0(WeightFolder, '/w_Brain_PC1_testA.mat'));
+Weight_EFAccuracy_Matrix = Weight_EFAccuracy_Mat$w.Brain.EFAccuracy.Matrix; # this is a 17 networks x 59412 vertices matrix
+
+# loop through each of the 17 networks, designate values above and below zero
+# Negative weights go in the first 1-17 indices, positive weights in 18-34
+data <- data.frame(group = matrix(0, 34, 1));
+data$x <- matrix(0, 34, 1);
+data$y <- matrix(0, 34, 1);
+Pos_Weight <- matrix(0, 1, 17);
+for (i in c(1:17)){
+  EFAccuracyWeight_tmp = Weight_EFAccuracy_Matrix[i,];
+  data$group[i] = 'Below';
+  data$x[i] = i;
+  data$y[i] = sum(EFAccuracyWeight_tmp[which(EFAccuracyWeight_tmp > 0)]);
+  data$group[i + 17] = 'Above';
+  data$x[i + 17] = i;
+  data$y[i + 17] = sum(EFAccuracyWeight_tmp[which(EFAccuracyWeight_tmp < 0)]);
+  Pos_Weight[i] = data$y[i];
+}
+WeightSort <- sort(Pos_Weight, index.return = TRUE); # sort based on the positive weights
+Rank <- WeightSort$ix;
+data$x[1:17] <- data$x[1:17][Rank];
+data$y[1:17] <- data$y[1:17][Rank];
+data$x[18:34] <- data$x[18:34][Rank];
+data$y[18:34] <- data$y[18:34][Rank];
+data$x_New <- rbind(as.matrix(c(1:17)),as.matrix(c(1:17)));
+data$x_ <- as.character(data$x_New);
+
+ColorScheme_PFNs_InOrder <-c("#E76178","#7499C2","#F5BA2E","#7499C2","#00A131","#AF33AD","#E443FF","#E76178","#E443FF","#AF33AD","#7499C2","#E76178","#7499C2","#00A131","#F5BA2E","#4E31A8","#F5BA2E")
+
+ColorScheme_XAxis <- ColorScheme_PFNs_InOrder[Rank] # for the X axis, just need them in order once
+ColorScheme_Fill_Manual <- c(ColorScheme_XAxis,ColorScheme_XAxis) # for the bar plot, need them repeated 
+
+Fig <- ggplot(data, aes(x=x_New, y=y, fill = x_, alpha = group)) +
+  geom_bar(stat = "identity", colour = "#000000", width = 0.8) +
+  scale_fill_manual(limits = data$x_, values = ColorScheme_Fill_Manual) +
+  scale_alpha_manual(limits = c('Above', 'Below'), values = c(0.3, 1)) +
+  labs(x = "Networks", y = expression("Sum of Weights")) + theme_classic() +
+  theme(axis.text.x = element_text(size= 27, color = ColorScheme_XAxis),
+        axis.text.y = element_text(size= 31, color = "black"),
+        axis.title=element_text(size = 31)) +
+  theme(legend.position = "none") +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1)) +
+  scale_x_discrete(limits = c(1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12,
+                              13, 14, 15, 16, 17),
+                   labels = as.character(Rank))
+Fig
+ggsave('/Users/askeller/Documents/Kellernet_PrelimAnalysis/CuiRep_7C_SumLoadings/PC1_testA_PredictionWeight_Sum_Bar.tiff', width = 19, height = 15, dpi = 600, units = "cm")
+```
+
+
+
+# PC2 - Discovery Sample
+```{r}
+# Set the folder with the results (note: results come from CuiRep_Step_4th_Weight_Visualize_Workbench_EFAccuracy_RandomCV.m)
+WeightFolder = '/Users/askeller/Documents/Kellernet_PrelimAnalysis/CuiRep_7C_SumLoadings/';
+Weight_EFAccuracy_Mat = readMat(paste0(WeightFolder, '/w_Brain_PC2_testA.mat'));
+Weight_EFAccuracy_Matrix = Weight_EFAccuracy_Mat$w.Brain.EFAccuracy.Matrix; # this is a 17 networks x 59412 vertices matrix
+
+# loop through each of the 17 networks, designate values above and below zero
+# Negative weights go in the first 1-17 indices, positive weights in 18-34
+data <- data.frame(group = matrix(0, 34, 1));
+data$x <- matrix(0, 34, 1);
+data$y <- matrix(0, 34, 1);
+Pos_Weight <- matrix(0, 1, 17);
+for (i in c(1:17)){
+  EFAccuracyWeight_tmp = Weight_EFAccuracy_Matrix[i,];
+  data$group[i] = 'Below';
+  data$x[i] = i;
+  data$y[i] = sum(EFAccuracyWeight_tmp[which(EFAccuracyWeight_tmp > 0)]);
+  data$group[i + 17] = 'Above';
+  data$x[i + 17] = i;
+  data$y[i + 17] = sum(EFAccuracyWeight_tmp[which(EFAccuracyWeight_tmp < 0)]);
+  Pos_Weight[i] = data$y[i];
+}
+WeightSort <- sort(Pos_Weight, index.return = TRUE); # sort based on the positive weights
+Rank <- WeightSort$ix;
+data$x[1:17] <- data$x[1:17][Rank];
+data$y[1:17] <- data$y[1:17][Rank];
+data$x[18:34] <- data$x[18:34][Rank];
+data$y[18:34] <- data$y[18:34][Rank];
+data$x_New <- rbind(as.matrix(c(1:17)),as.matrix(c(1:17)));
+data$x_ <- as.character(data$x_New);
+
+ColorScheme_PFNs_InOrder <-c("#E76178","#7499C2","#F5BA2E","#7499C2","#00A131","#AF33AD","#E443FF","#E76178","#E443FF","#AF33AD","#7499C2","#E76178","#7499C2","#00A131","#F5BA2E","#4E31A8","#F5BA2E")
+
+ColorScheme_XAxis <- ColorScheme_PFNs_InOrder[Rank] # for the X axis, just need them in order once
+ColorScheme_Fill_Manual <- c(ColorScheme_XAxis,ColorScheme_XAxis) # for the bar plot, need them repeated 
+
+Fig <- ggplot(data, aes(x=x_New, y=y, fill = x_, alpha = group)) +
+  geom_bar(stat = "identity", colour = "#000000", width = 0.8) +
+  scale_fill_manual(limits = data$x_, values = ColorScheme_Fill_Manual) +
+  scale_alpha_manual(limits = c('Above', 'Below'), values = c(0.3, 1)) +
+  labs(x = "Networks", y = expression("Sum of Weights")) + theme_classic() +
+  theme(axis.text.x = element_text(size= 27, color = ColorScheme_XAxis),
+        axis.text.y = element_text(size= 31, color = "black"),
+        axis.title=element_text(size = 31)) +
+  theme(legend.position = "none") +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1)) +
+  scale_x_discrete(limits = c(1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12,
+                              13, 14, 15, 16, 17),
+                   labels = as.character(Rank))
+Fig
+ggsave('/Users/askeller/Documents/Kellernet_PrelimAnalysis/CuiRep_7C_SumLoadings/PC2_testA_PredictionWeight_Sum_Bar.tiff', width = 19, height = 15, dpi = 600, units = "cm")
+```
+
+
+# PC3 - Discovery Sample
+```{r}
+# Set the folder with the results (note: results come from CuiRep_Step_4th_Weight_Visualize_Workbench_EFAccuracy_RandomCV.m)
+WeightFolder = '/Users/askeller/Documents/Kellernet_PrelimAnalysis/CuiRep_7C_SumLoadings/';
+Weight_EFAccuracy_Mat = readMat(paste0(WeightFolder, '/w_Brain_PC3_testA.mat'));
+Weight_EFAccuracy_Matrix = Weight_EFAccuracy_Mat$w.Brain.EFAccuracy.Matrix; # this is a 17 networks x 59412 vertices matrix
+
+# loop through each of the 17 networks, designate values above and below zero
+# Negative weights go in the first 1-17 indices, positive weights in 18-34
+data <- data.frame(group = matrix(0, 34, 1));
+data$x <- matrix(0, 34, 1);
+data$y <- matrix(0, 34, 1);
+Pos_Weight <- matrix(0, 1, 17);
+for (i in c(1:17)){
+  EFAccuracyWeight_tmp = Weight_EFAccuracy_Matrix[i,];
+  data$group[i] = 'Below';
+  data$x[i] = i;
+  data$y[i] = sum(EFAccuracyWeight_tmp[which(EFAccuracyWeight_tmp > 0)]);
+  data$group[i + 17] = 'Above';
+  data$x[i + 17] = i;
+  data$y[i + 17] = sum(EFAccuracyWeight_tmp[which(EFAccuracyWeight_tmp < 0)]);
+  Pos_Weight[i] = data$y[i];
+}
+WeightSort <- sort(Pos_Weight, index.return = TRUE); # sort based on the positive weights
+Rank <- WeightSort$ix;
+data$x[1:17] <- data$x[1:17][Rank];
+data$y[1:17] <- data$y[1:17][Rank];
+data$x[18:34] <- data$x[18:34][Rank];
+data$y[18:34] <- data$y[18:34][Rank];
+data$x_New <- rbind(as.matrix(c(1:17)),as.matrix(c(1:17)));
+data$x_ <- as.character(data$x_New);
+
+ColorScheme_PFNs_InOrder <-c("#E76178","#7499C2","#F5BA2E","#7499C2","#00A131","#AF33AD","#E443FF","#E76178","#E443FF","#AF33AD","#7499C2","#E76178","#7499C2","#00A131","#F5BA2E","#4E31A8","#F5BA2E")
+
+ColorScheme_XAxis <- ColorScheme_PFNs_InOrder[Rank] # for the X axis, just need them in order once
+ColorScheme_Fill_Manual <- c(ColorScheme_XAxis,ColorScheme_XAxis) # for the bar plot, need them repeated 
+
+Fig <- ggplot(data, aes(x=x_New, y=y, fill = x_, alpha = group)) +
+  geom_bar(stat = "identity", colour = "#000000", width = 0.8) +
+  scale_fill_manual(limits = data$x_, values = ColorScheme_Fill_Manual) +
+  scale_alpha_manual(limits = c('Above', 'Below'), values = c(0.3, 1)) +
+  labs(x = "Networks", y = expression("Sum of Weights")) + theme_classic() +
+  theme(axis.text.x = element_text(size= 27, color = ColorScheme_XAxis),
+        axis.text.y = element_text(size= 31, color = "black"),
+        axis.title=element_text(size = 31)) +
+  theme(legend.position = "none") +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1)) +
+  scale_x_discrete(limits = c(1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12,
+                              13, 14, 15, 16, 17),
+                   labels = as.character(Rank))
+Fig
+ggsave('/Users/askeller/Documents/Kellernet_PrelimAnalysis/CuiRep_7C_SumLoadings/PC3_testA_PredictionWeight_Sum_Bar.tiff', width = 19, height = 15, dpi = 600, units = "cm")
+```
+
+
+
+
+
+# PC1 - Replication Sample
+```{r}
+# Set the folder with the results (note: results come from CuiRep_Step_4th_Weight_Visualize_Workbench_EFAccuracy_RandomCV.m)
+WeightFolder = '/Users/askeller/Documents/Kellernet_PrelimAnalysis/CuiRep_7C_SumLoadings/';
+Weight_EFAccuracy_Mat = readMat(paste0(WeightFolder, '/w_Brain_PC1_testB.mat'));
+Weight_EFAccuracy_Matrix = Weight_EFAccuracy_Mat$w.Brain.EFAccuracy.Matrix; # this is a 17 networks x 59412 vertices matrix
+
+# loop through each of the 17 networks, designate values above and below zero
+# Negative weights go in the first 1-17 indices, positive weights in 18-34
+data <- data.frame(group = matrix(0, 34, 1));
+data$x <- matrix(0, 34, 1);
+data$y <- matrix(0, 34, 1);
+Pos_Weight <- matrix(0, 1, 17);
+for (i in c(1:17)){
+  EFAccuracyWeight_tmp = Weight_EFAccuracy_Matrix[i,];
+  data$group[i] = 'Below';
+  data$x[i] = i;
+  data$y[i] = sum(EFAccuracyWeight_tmp[which(EFAccuracyWeight_tmp > 0)]);
+  data$group[i + 17] = 'Above';
+  data$x[i + 17] = i;
+  data$y[i + 17] = sum(EFAccuracyWeight_tmp[which(EFAccuracyWeight_tmp < 0)]);
+  Pos_Weight[i] = data$y[i];
+}
+WeightSort <- sort(Pos_Weight, index.return = TRUE); # sort based on the positive weights
+Rank <- WeightSort$ix;
+data$x[1:17] <- data$x[1:17][Rank];
+data$y[1:17] <- data$y[1:17][Rank];
+data$x[18:34] <- data$x[18:34][Rank];
+data$y[18:34] <- data$y[18:34][Rank];
+data$x_New <- rbind(as.matrix(c(1:17)),as.matrix(c(1:17)));
+data$x_ <- as.character(data$x_New);
+
+ColorScheme_PFNs_InOrder <-c("#E76178","#7499C2","#F5BA2E","#7499C2","#00A131","#AF33AD","#E443FF","#E76178","#E443FF","#AF33AD","#7499C2","#E76178","#7499C2","#00A131","#F5BA2E","#4E31A8","#F5BA2E")
+
+ColorScheme_XAxis <- ColorScheme_PFNs_InOrder[Rank] # for the X axis, just need them in order once
+ColorScheme_Fill_Manual <- c(ColorScheme_XAxis,ColorScheme_XAxis) # for the bar plot, need them repeated 
+
+Fig <- ggplot(data, aes(x=x_New, y=y, fill = x_, alpha = group)) +
+  geom_bar(stat = "identity", colour = "#000000", width = 0.8) +
+  scale_fill_manual(limits = data$x_, values = ColorScheme_Fill_Manual) +
+  scale_alpha_manual(limits = c('Above', 'Below'), values = c(0.3, 1)) +
+  labs(x = "Networks", y = expression("Sum of Weights")) + theme_classic() +
+  theme(axis.text.x = element_text(size= 27, color = ColorScheme_XAxis),
+        axis.text.y = element_text(size= 31, color = "black"),
+        axis.title=element_text(size = 31)) +
+  theme(legend.position = "none") +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1)) +
+  scale_x_discrete(limits = c(1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12,
+                              13, 14, 15, 16, 17),
+                   labels = as.character(Rank))
+Fig
+ggsave('/Users/askeller/Documents/Kellernet_PrelimAnalysis/CuiRep_7C_SumLoadings/PC1_testB_PredictionWeight_Sum_Bar.tiff', width = 19, height = 15, dpi = 600, units = "cm")
+```
+
+
+
+# PC2 - Replication Sample
+```{r}
+# Set the folder with the results (note: results come from CuiRep_Step_4th_Weight_Visualize_Workbench_EFAccuracy_RandomCV.m)
+WeightFolder = '/Users/askeller/Documents/Kellernet_PrelimAnalysis/CuiRep_7C_SumLoadings/';
+Weight_EFAccuracy_Mat = readMat(paste0(WeightFolder, '/w_Brain_PC2_testB.mat'));
+Weight_EFAccuracy_Matrix = Weight_EFAccuracy_Mat$w.Brain.EFAccuracy.Matrix; # this is a 17 networks x 59412 vertices matrix
+
+# loop through each of the 17 networks, designate values above and below zero
+# Negative weights go in the first 1-17 indices, positive weights in 18-34
+data <- data.frame(group = matrix(0, 34, 1));
+data$x <- matrix(0, 34, 1);
+data$y <- matrix(0, 34, 1);
+Pos_Weight <- matrix(0, 1, 17);
+for (i in c(1:17)){
+  EFAccuracyWeight_tmp = Weight_EFAccuracy_Matrix[i,];
+  data$group[i] = 'Below';
+  data$x[i] = i;
+  data$y[i] = sum(EFAccuracyWeight_tmp[which(EFAccuracyWeight_tmp > 0)]);
+  data$group[i + 17] = 'Above';
+  data$x[i + 17] = i;
+  data$y[i + 17] = sum(EFAccuracyWeight_tmp[which(EFAccuracyWeight_tmp < 0)]);
+  Pos_Weight[i] = data$y[i];
+}
+WeightSort <- sort(Pos_Weight, index.return = TRUE); # sort based on the positive weights
+Rank <- WeightSort$ix;
+data$x[1:17] <- data$x[1:17][Rank];
+data$y[1:17] <- data$y[1:17][Rank];
+data$x[18:34] <- data$x[18:34][Rank];
+data$y[18:34] <- data$y[18:34][Rank];
+data$x_New <- rbind(as.matrix(c(1:17)),as.matrix(c(1:17)));
+data$x_ <- as.character(data$x_New);
+
+ColorScheme_PFNs_InOrder <-c("#E76178","#7499C2","#F5BA2E","#7499C2","#00A131","#AF33AD","#E443FF","#E76178","#E443FF","#AF33AD","#7499C2","#E76178","#7499C2","#00A131","#F5BA2E","#4E31A8","#F5BA2E")
+
+ColorScheme_XAxis <- ColorScheme_PFNs_InOrder[Rank] # for the X axis, just need them in order once
+ColorScheme_Fill_Manual <- c(ColorScheme_XAxis,ColorScheme_XAxis) # for the bar plot, need them repeated 
+
+Fig <- ggplot(data, aes(x=x_New, y=y, fill = x_, alpha = group)) +
+  geom_bar(stat = "identity", colour = "#000000", width = 0.8) +
+  scale_fill_manual(limits = data$x_, values = ColorScheme_Fill_Manual) +
+  scale_alpha_manual(limits = c('Above', 'Below'), values = c(0.3, 1)) +
+  labs(x = "Networks", y = expression("Sum of Weights")) + theme_classic() +
+  theme(axis.text.x = element_text(size= 27, color = ColorScheme_XAxis),
+        axis.text.y = element_text(size= 31, color = "black"),
+        axis.title=element_text(size = 31)) +
+  theme(legend.position = "none") +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1)) +
+  scale_x_discrete(limits = c(1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12,
+                              13, 14, 15, 16, 17),
+                   labels = as.character(Rank))
+Fig
+ggsave('/Users/askeller/Documents/Kellernet_PrelimAnalysis/CuiRep_7C_SumLoadings/PC2_testB_PredictionWeight_Sum_Bar.tiff', width = 19, height = 15, dpi = 600, units = "cm")
+```
+
+
+# PC3 - Replication Sample
+```{r}
+# Set the folder with the results (note: results come from CuiRep_Step_4th_Weight_Visualize_Workbench_EFAccuracy_RandomCV.m)
+WeightFolder = '/Users/askeller/Documents/Kellernet_PrelimAnalysis/CuiRep_7C_SumLoadings/';
+Weight_EFAccuracy_Mat = readMat(paste0(WeightFolder, '/w_Brain_PC3_testB.mat'));
+Weight_EFAccuracy_Matrix = Weight_EFAccuracy_Mat$w.Brain.EFAccuracy.Matrix; # this is a 17 networks x 59412 vertices matrix
+
+# loop through each of the 17 networks, designate values above and below zero
+# Negative weights go in the first 1-17 indices, positive weights in 18-34
+data <- data.frame(group = matrix(0, 34, 1));
+data$x <- matrix(0, 34, 1);
+data$y <- matrix(0, 34, 1);
+Pos_Weight <- matrix(0, 1, 17);
+for (i in c(1:17)){
+  EFAccuracyWeight_tmp = Weight_EFAccuracy_Matrix[i,];
+  data$group[i] = 'Below';
+  data$x[i] = i;
+  data$y[i] = sum(EFAccuracyWeight_tmp[which(EFAccuracyWeight_tmp > 0)]);
+  data$group[i + 17] = 'Above';
+  data$x[i + 17] = i;
+  data$y[i + 17] = sum(EFAccuracyWeight_tmp[which(EFAccuracyWeight_tmp < 0)]);
+  Pos_Weight[i] = data$y[i];
+}
+WeightSort <- sort(Pos_Weight, index.return = TRUE); # sort based on the positive weights
+Rank <- WeightSort$ix;
+data$x[1:17] <- data$x[1:17][Rank];
+data$y[1:17] <- data$y[1:17][Rank];
+data$x[18:34] <- data$x[18:34][Rank];
+data$y[18:34] <- data$y[18:34][Rank];
+data$x_New <- rbind(as.matrix(c(1:17)),as.matrix(c(1:17)));
+data$x_ <- as.character(data$x_New);
+
+ColorScheme_PFNs_InOrder <-c("#E76178","#7499C2","#F5BA2E","#7499C2","#00A131","#AF33AD","#E443FF","#E76178","#E443FF","#AF33AD","#7499C2","#E76178","#7499C2","#00A131","#F5BA2E","#4E31A8","#F5BA2E")
+
+ColorScheme_XAxis <- ColorScheme_PFNs_InOrder[Rank] # for the X axis, just need them in order once
+ColorScheme_Fill_Manual <- c(ColorScheme_XAxis,ColorScheme_XAxis) # for the bar plot, need them repeated 
+
+Fig <- ggplot(data, aes(x=x_New, y=y, fill = x_, alpha = group)) +
+  geom_bar(stat = "identity", colour = "#000000", width = 0.8) +
+  scale_fill_manual(limits = data$x_, values = ColorScheme_Fill_Manual) +
+  scale_alpha_manual(limits = c('Above', 'Below'), values = c(0.3, 1)) +
+  labs(x = "Networks", y = expression("Sum of Weights")) + theme_classic() +
+  theme(axis.text.x = element_text(size= 27, color = ColorScheme_XAxis),
+        axis.text.y = element_text(size= 31, color = "black"),
+        axis.title=element_text(size = 31)) +
+  theme(legend.position = "none") +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1)) +
+  scale_x_discrete(limits = c(1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12,
+                              13, 14, 15, 16, 17),
+                   labels = as.character(Rank))
+Fig
+ggsave('/Users/askeller/Documents/Kellernet_PrelimAnalysis/CuiRep_7C_SumLoadings/PC3_testB_PredictionWeight_Sum_Bar.tiff', width = 19, height = 15, dpi = 600, units = "cm")
+```
