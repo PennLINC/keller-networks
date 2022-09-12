@@ -1,7 +1,7 @@
 % This script will loop through the PFNs output and calculate the total
 % cortical representation (PFN "size") as the sum of loadings for each PFN
 
-file_pattern='/cbica/projects/abcdfnets/results/SingleParcel_1by1_Rest/sub-NDARINV*/IndividualParcel_Final_sbj1_comp17_alphaS21_1_alphaL300_vxInfo1_ard0_eta0/final_UV.mat'
+file_pattern='/cbica/projects/abcdfnets/results/SingleParcel_1by1/sub-NDARINV*/IndividualParcel_Final_sbj1_comp17_alphaS21_1_alphaL300_vxInfo1_ard0_eta0/final_UV.mat'
 data_dir=dir(file_pattern);
 data_locations=fullfile({data_dir.folder}, {data_dir.name});
 
