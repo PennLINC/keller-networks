@@ -43,6 +43,7 @@ library(ggtext)
 pfn_sizes <- read.csv("/Users/askeller/Documents/Kellernet_PrelimAnalysis/All_PFN_sizes.csv") # n=9,132
 # Change PFN column names so they're sensible
 colnames(pfn_sizes)<-c("subjectkey","PFN1","PFN2","PFN3","PFN4","PFN5","PFN6","PFN7","PFN8","PFN9","PFN10","PFN11","PFN12","PFN13","PFN14","PFN15","PFN16","PFN17")
+pfn_sizes$subjectkey<-gsub('sub-NDARINV','NDAR_INV',pfn_sizes$subjectkey)
 ```
 
 
