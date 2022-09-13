@@ -156,6 +156,32 @@ abcd.data.traintest$interview_age <- as.numeric(abcd.data.traintest$interview_ag
 ```
 
 
+# standardize all variables for LMER (separately in Discovery and Replication samples)
+```{r}
+abcd.data.train.harmonized$PFN3<-(abcd.data.train.harmonized$PFN3-mean(abcd.data.train.harmonized$PFN3,na.rm=TRUE))/sd(abcd.data.train.harmonized$PFN3,na.rm=TRUE)
+
+abcd.data.train.harmonized$PFN15<-(abcd.data.train.harmonized$PFN15-mean(abcd.data.train.harmonized$PFN15,na.rm=TRUE))/sd(abcd.data.train.harmonized$PFN15,na.rm=TRUE)
+
+abcd.data.train.harmonized$PFN17<-(abcd.data.train.harmonized$PFN17-mean(abcd.data.train.harmonized$PFN17,na.rm=TRUE))/sd(abcd.data.train.harmonized$PFN17,na.rm=TRUE)
+
+abcd.data.test.harmonized$PFN3<-(abcd.data.test.harmonized$PFN3-mean(abcd.data.test.harmonized$PFN3,na.rm=TRUE))/sd(abcd.data.test.harmonized$PFN3,na.rm=TRUE)
+
+abcd.data.test.harmonized$PFN15<-(abcd.data.test.harmonized$PFN15-mean(abcd.data.test.harmonized$PFN15,na.rm=TRUE))/sd(abcd.data.test.harmonized$PFN15,na.rm=TRUE)
+
+abcd.data.test.harmonized$PFN17<-(abcd.data.test.harmonized$PFN17-mean(abcd.data.test.harmonized$PFN17,na.rm=TRUE))/sd(abcd.data.test.harmonized$PFN17,na.rm=TRUE)
+
+
+abcd.data.train.harmonized$interview_age<-(abcd.data.train.harmonized$interview_age-mean(abcd.data.train.harmonized$interview_age,na.rm=TRUE))/sd(abcd.data.train.harmonized$interview_age,na.rm=TRUE)
+
+abcd.data.test.harmonized$interview_age<-(abcd.data.test.harmonized$interview_age-mean(abcd.data.test.harmonized$interview_age,na.rm=TRUE))/sd(abcd.data.test.harmonized$interview_age,na.rm=TRUE)
+
+abcd.data.train.harmonized$meanFD<-(abcd.data.train.harmonized$meanFD-mean(abcd.data.train.harmonized$meanFD,na.rm=TRUE))/sd(abcd.data.train.harmonized$meanFD,na.rm=TRUE)
+
+abcd.data.test.harmonized$meanFD<-(abcd.data.test.harmonized$meanFD-mean(abcd.data.test.harmonized$meanFD,na.rm=TRUE))/sd(abcd.data.test.harmonized$meanFD,na.rm=TRUE)
+
+```
+
+
 # linear mixed effects models associating general cognition with each fronto-parietal PFN
 ```{r}
 summary(lmer(PFN3~interview_age+sex+(1|rel_family_id)+meanFD+thompson_PC1,data=abcd.data.train.harmonized))
@@ -165,6 +191,17 @@ summary(lmer(PFN17~interview_age+sex+(1|rel_family_id)+meanFD+thompson_PC1,data=
 summary(lmer(PFN3~interview_age+sex+(1|rel_family_id)+meanFD+thompson_PC1,data=abcd.data.test.harmonized))
 summary(lmer(PFN15~interview_age+sex+(1|rel_family_id)+meanFD+thompson_PC1,data=abcd.data.test.harmonized))
 summary(lmer(PFN17~interview_age+sex+(1|rel_family_id)+meanFD+thompson_PC1,data=abcd.data.test.harmonized))
+```
+
+# get confidence intervals
+```{r}
+confint(lmer(PFN3~interview_age+sex+(1|rel_family_id)+meanFD+thompson_PC1,data=abcd.data.train.harmonized))
+confint(lmer(PFN15~interview_age+sex+(1|rel_family_id)+meanFD+thompson_PC1,data=abcd.data.train.harmonized))
+confint(lmer(PFN17~interview_age+sex+(1|rel_family_id)+meanFD+thompson_PC1,data=abcd.data.train.harmonized))
+
+confint(lmer(PFN3~interview_age+sex+(1|rel_family_id)+meanFD+thompson_PC1,data=abcd.data.test.harmonized))
+confint(lmer(PFN15~interview_age+sex+(1|rel_family_id)+meanFD+thompson_PC1,data=abcd.data.test.harmonized))
+confint(lmer(PFN17~interview_age+sex+(1|rel_family_id)+meanFD+thompson_PC1,data=abcd.data.test.harmonized))
 ```
 
 
