@@ -191,6 +191,18 @@ summary(lmer(PFN17~interview_age+sex+(1|rel_family_id)+meanFD+thompson_PC1,data=
 summary(lmer(PFN3~interview_age+sex+(1|rel_family_id)+meanFD+thompson_PC1,data=abcd.data.test.harmonized))
 summary(lmer(PFN15~interview_age+sex+(1|rel_family_id)+meanFD+thompson_PC1,data=abcd.data.test.harmonized))
 summary(lmer(PFN17~interview_age+sex+(1|rel_family_id)+meanFD+thompson_PC1,data=abcd.data.test.harmonized))
+
+
+mod1<-lmer(PFN3~interview_age+sex+(1|rel_family_id)+meanFD+thompson_PC1,data=abcd.data.train.harmonized)
+mod2<-lmer(PFN15~interview_age+sex+(1|rel_family_id)+meanFD+thompson_PC1,data=abcd.data.train.harmonized)
+mod3<-lmer(PFN17~interview_age+sex+(1|rel_family_id)+meanFD+thompson_PC1,data=abcd.data.train.harmonized)
+mod4<-lmer(PFN3~interview_age+sex+(1|rel_family_id)+meanFD+thompson_PC1,data=abcd.data.test.harmonized)
+mod5<-lmer(PFN15~interview_age+sex+(1|rel_family_id)+meanFD+thompson_PC1,data=abcd.data.test.harmonized)
+mod6<-lmer(PFN17~interview_age+sex+(1|rel_family_id)+meanFD+thompson_PC1,data=abcd.data.test.harmonized)
+
+tab_model(mod1,mod2,mod3,pred.labels = c("Intercept","Age","Sex","Mean FD","General Cognition"),dv.labels=c("PFN 3","PFN 15","PFN 17"),digits=2,digits.p=2,show.se=TRUE,show.stat=TRUE,string.stat = "t",string.se = "Std. Error",show.intercept=TRUE,show.ci = FALSE, p.adjust="none",p.style="scientific", file = "/Users/askeller/Documents/Writing_InProgress/PFNs_Cognition/Associations_TableX_Discovery.doc")
+
+tab_model(mod4,mod5,mod6,pred.labels = c("Intercept","Age","Sex","Mean FD","General Cognition"),dv.labels=c("PFN 3","PFN 15","PFN 17"),digits=2,digits.p=2,show.se=TRUE,show.stat=TRUE,string.stat = "t",string.se = "Std. Error",show.intercept=TRUE,show.ci = FALSE, p.adjust="none",p.style="scientific", file = "/Users/askeller/Documents/Writing_InProgress/PFNs_Cognition/Associations_TableX_Replication.doc")
 ```
 
 # get confidence intervals
