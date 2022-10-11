@@ -62,4 +62,5 @@ abcd.data.test <- abcd.data.traintest[abcd.data.traintest$matched_group==2,]
 abcd.data.for.ridge<-abcd.data.traintest[,c("subjectkey","thompson_PC1","thompson_PC2","thompson_PC3","matched_group","interview_age","sex","meanFD","abcd_site","rel_family_id")]
 abcd.data.for.ridge.complete<-abcd.data.for.ridge[complete.cases(abcd.data.for.ridge),]
 abcd.data.for.ridge.complete<-abcd.data.for.ridge.complete %>% distinct()
+abcd.data.for.ridge.complete$subjectkey<-gsub('NDAR_INV','NDARINV',abcd.data.for.ridge.complete$subjectkey) 
 write.csv(abcd.data.for.ridge.complete,"/Users/askeller/Documents/Kellernet_PrelimAnalysis/data_for_ridge.csv")
