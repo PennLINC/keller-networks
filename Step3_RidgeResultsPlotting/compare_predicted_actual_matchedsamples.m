@@ -1,4 +1,6 @@
 
+% NOTE: this script is meant to be run with the matlab GUI to make figures
+
 clear all
 
 % Add package to read NPY files into matlab
