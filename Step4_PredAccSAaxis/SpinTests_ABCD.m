@@ -15,6 +15,6 @@ AtlasLabel_Perm_File = [PermuteData_Folder '/GroupAtlasLabel_Perm.mat'];
 Configuration_File = [Configuration_Folder '/Configuration_Group.mat'];
 save(Configuration_File, 'AtlasLabel_lh_CSV_Path', 'AtlasLabel_rh_CSV_Path', 'AtlasLabel_Perm_File');
 ScriptPath = [Configuration_Folder '/Script_Group.sh'];
-addpath(genpath('/cbica/projects/abcdfnets/scripts')
+addpath(genpath('/cbica/projects/abcdfnets/scripts'))
 SpinPermuFS(AtlasLabel_lh_CSV_Path, AtlasLabel_rh_CSV_Path, 1000, AtlasLabel_Perm_File)
 
