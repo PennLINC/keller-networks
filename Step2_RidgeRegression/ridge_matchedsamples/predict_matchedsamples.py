@@ -104,5 +104,5 @@ np.save('/{0}/{1}_alphas_testA.npy'.format(working_dir,phenotype_name),alphas)
 # calculate prediction accuracy and save it out
 acc_testA = pearsonr(y_A, predicted_y_A)[0]
 acc_testB = pearsonr(y_B, predicted_y_B)[0]
-np.save('/{0}/acc_testA.npy'.format(working_dir),acc_testA)
-np.save('/{0}/acc_testB.npy'.format(working_dir),acc_testB)
+np.save('/{0}/{1}_acc_testA.npy'.format(working_dir,phenotype_name),acc_testA)
+np.save('/{0}/{1}_acc_testB.npy'.format(working_dir,phenotype_name),acc_testB)
