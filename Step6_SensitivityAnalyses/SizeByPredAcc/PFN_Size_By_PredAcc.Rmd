@@ -1,0 +1,115 @@
+---
+title: "PFN_Size_By_PredAcc"
+output: html_document
+date: '2023-01-31'
+---
+
+```{r}
+library(gifti)
+library(R.matlab)
+library(RNifti)
+library(ciftiTools)
+ciftiTools.setOption('wb_path', '/Users/askeller/Documents/workbench/')
+library(ggplot2)
+```
+
+
+# Load in the data
+```{r}
+PFNs_hardparcel<-read_cifti('/Users/askeller/Documents/Kellernet_PrelimAnalysis/hardparcel_group.dscalar.nii')
+
+pred_acc <- readMat('/Users/askeller/Documents/Kellernet_PrelimAnalysis/pred_acc_by_PFN.mat');
+pred_acc <- pred_acc$Rvals.byPFN
+
+```
+
+
+# Get total size for each PFN from the hard parcellation
+```{r}
+PFNsize <- c()
+
+for (PFN in 1:17) {
+ PFNsize <- c(PFNsize,sum(PFNs_hardparcel$data$cortex_left==PFN)+sum(PFNs_hardparcel$data$cortex_right==PFN))
+}
+
+PFNsize_predacc <- data.frame(pred_acc,PFNsize)
+colnames(PFNsize_predacc)<-c("PC1","PC2","PC3","Size")
+```
+
+
+# Make a plot of prediction accuracy by PFN size
+```{r}
+png("/Users/askeller/Documents/Kellernet_PrelimAnalysis/RevisionAnalyses_PFNsCog/SizeByPredAcc/Size_By_PredAcc_PC1.png",
+    width = 2600, 
+    height = 3100,
+    res=1200)
+ggplot(data=PFNsize_predacc,aes(Size,PC1))+geom_point(size=1,colour=rgb(33/255,80/255,113/255))+geom_smooth(method=lm,colour='black')+ theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank(),panel.background = element_blank(), axis.line = element_line(colour = "black")) +ylab('General Cognition Pred Acc') + xlab('PFN Size')
+dev.off() 
+
+png("/Users/askeller/Documents/Kellernet_PrelimAnalysis/RevisionAnalyses_PFNsCog/SizeByPredAcc/Size_By_PredAcc_PC2.png",
+    width = 2600, 
+    height = 3100,
+    res=1200)
+ggplot(data=PFNsize_predacc,aes(Size,PC2))+geom_point(size=1,colour=rgb(33/255,80/255,113/255))+geom_smooth(method=lm,colour='black')+ theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank(),panel.background = element_blank(), axis.line = element_line(colour = "black")) +ylab('Executive Function Pred Acc') + xlab('PFN Size')
+dev.off() 
+
+png("/Users/askeller/Documents/Kellernet_PrelimAnalysis/RevisionAnalyses_PFNsCog/SizeByPredAcc/Size_By_PredAcc_PC3.png",
+    width = 2600, 
+    height = 3100,
+    res=1200)
+ggplot(data=PFNsize_predacc,aes(Size,PC3))+geom_point(size=1,colour=rgb(33/255,80/255,113/255))+geom_smooth(method=lm,colour='black')+ theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank(),panel.background = element_blank(), axis.line = element_line(colour = "black")) +ylab('Learning/Memory Pred Acc') + xlab('PFN Size')
+dev.off() 
+```
+
+
+# Prediction accuracy by PFN size correlations
+```{r}
+cor.test(PFNsize_predacc$Size,PFNsize_predacc$PC1)
+cor.test(PFNsize_predacc$Size,PFNsize_predacc$PC2)
+cor.test(PFNsize_predacc$Size,PFNsize_predacc$PC3)
+```
+
+
+# Now test the association between PFN size and S-A axis rank:
+```{r}
+# Get PFN hard parcel assignment in fsaverage5 space
+# Load in gifti files with PFN hard parcel assignment
+PFNs_gii_L<-read_gifti('/Users/askeller/Documents/Kellernet_PrelimAnalysis/SpinTests/hardparcel_LH.fsaverage5.label.gii')
+PFNs_gii_R<-read_gifti('/Users/askeller/Documents/Kellernet_PrelimAnalysis/SpinTests/hardparcel_RH.fsaverage5.label.gii')
+# Note: range of values is 1-17 for the right hemisphere but 1-16 for the left hemisphere (network 17 is right lateralized)
+
+# Extract the list of ranks
+PFNs_L <- PFNs_gii_L[["data"]][["labels"]]
+PFNs_R <- PFNs_gii_R[["data"]][["labels"]]
+
+
+# Get S-A axis rank by PFN in fsaverage5 space
+# Load in gifti files with S-A axis ranks in fsaverage5 from Val's github repo
+SA_axis_gii_L<-read_gifti('/Users/askeller/Documents/Kellernet_PrelimAnalysis/SpinTests/SensorimotorAssociation_Axis_LH.fsaverage5.func.gii')
+SA_axis_gii_R<-read_gifti('/Users/askeller/Documents/Kellernet_PrelimAnalysis/SpinTests/SensorimotorAssociation_Axis_RH.fsaverage5.func.gii')
+
+# Extract the list of ranks
+SA_L <- SA_axis_gii_L[["data"]][["normal"]]
+SA_R <- SA_axis_gii_R[["data"]][["normal"]]
+
+SArank_byPFN <- vector()
+
+for (i in 1:17) {
+SArank_byPFN[i] <- mean(c(SA_L[PFNs_L==i],SA_R[PFNs_R==i]))
+}
+```
+
+
+# S-A rank by PFN size correlation
+```{r}
+cor.test(SArank_byPFN,PFNsize_predacc$Size)
+PFNsize_predacc$SArank<-SArank_byPFN
+
+# Make a plot of prediction accuracy by PFN size
+png("/Users/askeller/Documents/Kellernet_PrelimAnalysis/RevisionAnalyses_PFNsCog/SizeByPredAcc/Size_By_SArank2.png",
+    width = 3900, 
+    height = 3100,
+    res=1200)
+ggplot(data=PFNsize_predacc,aes(Size,SArank,color=SArank))+geom_point(size=1)+geom_smooth(method=lm,colour='black')+ theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank(),panel.background = element_blank(), axis.line = element_line(colour = "black")) +ylab('S-A Axis Rank') + xlab('PFN Size') + scale_color_gradient2(low = "goldenrod1", mid = "#f9f7fa", high = "#6f1282", aesthetics = "color", name = NULL,midpoint=26287) 
+dev.off() 
+```
