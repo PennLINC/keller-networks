@@ -65,7 +65,7 @@ Run spin tests to spatially permute the S-A axis labels. First use convert_SAran
 
 ### 4.2	Stats+Plotting
 
-Next, use the Rmarkdown SA_rank_by_PFN_spins.Rmd to do the statsistics and make plots of the relationship between S-A axis rank and prediction accuracy by PFN.
+Next, use the Rmarkdown SA_rank_by_PFN_spins.Rmd to do the statistics and make plots of the relationship between S-A axis rank and prediction accuracy by PFN.
 
 
 ## Step 5: Sum Of Weights (Supplementary Figure 2)
@@ -75,3 +75,20 @@ To recreate Cui et al. (2020)’s Figure 7C showing the sum of model weights by 
 
 ### 5.2	Plot the sum of weights by PFN as a bar plot for each matched sample and each cognitive domain (Matlab to R)
 The Rmarkdown file Cui2020Rep_SumWeightsBarPlots.Rmd walks through the plotting for each of the 6 files above (3 cognitive domains x 2 matched samples). The resultant bar plots will show the sum of weights by PFN. 
+
+
+## Step 6: Sensitivity Analyses
+
+### Individual Task: Trains ridge regression models on PFN topography to predict performance on individual cognitive tasks.
+
+### Separate Samples PCA: Trains ridge regression models on PFN topography to predict cognitive PCA scores derived seprately in the discovery and replicaiton samples. Note that "Step3_RidgeRegressionPlotting/compare_predicted_actual_matchedsamples.m" contains code to visualize these results. 
+
+### SES: Trains two ridge regression models: the first is trained only on areal deprivation index and the second is trained on both areal deprivation index and PFN topography
+
+### Resting State Only: Performs ridge regression analyses and univariate association analyses using only the data from resting-state scans
+
+### Size By Pred Acc: Compares the size of each PFN to prediction accuracy
+
+### Split Half Reliability: Computes the split-half reliability of PFN topography in a subset of participants
+
+### Psychotropic Medication Use: Sensitivity analyses controlling for psychotropic medication use can be found in "/Step1_TotalCorticalRepresentation/Associations_PFN_Cognition.Rmd"
