@@ -94,7 +94,8 @@ Performs ridge regression analyses and univariate association analyses using onl
 ### Size By Pred Acc: 
 Compares the size of each PFN to prediction accuracy
 
-### Split Half Reliability: Computes the split-half reliability of PFN topography in a subset of participants
+### Split Half Reliability: 
+Computes the split-half reliability of PFN topography in a subset of participants
 
 ### Psychotropic Medication Use: 
 Sensitivity analyses controlling for psychotropic medication use can be found in "/Step1_TotalCorticalRepresentation/Associations_PFN_Cognition.Rmd"
