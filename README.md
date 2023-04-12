@@ -79,16 +79,22 @@ The Rmarkdown file Cui2020Rep_SumWeightsBarPlots.Rmd walks through the plotting 
 
 ## Step 6: Sensitivity Analyses
 
-### Individual Task: Trains ridge regression models on PFN topography to predict performance on individual cognitive tasks.
+### Individual Task: 
+Trains ridge regression models on PFN topography to predict performance on individual cognitive tasks.
 
-### Separate Samples PCA: Trains ridge regression models on PFN topography to predict cognitive PCA scores derived seprately in the discovery and replicaiton samples. Note that "Step3_RidgeRegressionPlotting/compare_predicted_actual_matchedsamples.m" contains code to visualize these results. 
+### Separate Samples PCA: 
+Trains ridge regression models on PFN topography to predict cognitive PCA scores derived seprately in the discovery and replicaiton samples. Note that "Step3_RidgeRegressionPlotting/compare_predicted_actual_matchedsamples.m" contains code to visualize these results. 
 
-### SES: Trains two ridge regression models: the first is trained only on areal deprivation index and the second is trained on both areal deprivation index and PFN topography
+### SES: 
+Trains two ridge regression models: the first is trained only on areal deprivation index and the second is trained on both areal deprivation index and PFN topography
 
-### Resting State Only: Performs ridge regression analyses and univariate association analyses using only the data from resting-state scans
+### Resting State Only: 
+Performs ridge regression analyses and univariate association analyses using only the data from resting-state scans
 
-### Size By Pred Acc: Compares the size of each PFN to prediction accuracy
+### Size By Pred Acc: 
+Compares the size of each PFN to prediction accuracy
 
 ### Split Half Reliability: Computes the split-half reliability of PFN topography in a subset of participants
 
-### Psychotropic Medication Use: Sensitivity analyses controlling for psychotropic medication use can be found in "/Step1_TotalCorticalRepresentation/Associations_PFN_Cognition.Rmd"
+### Psychotropic Medication Use: 
+Sensitivity analyses controlling for psychotropic medication use can be found in "/Step1_TotalCorticalRepresentation/Associations_PFN_Cognition.Rmd"
