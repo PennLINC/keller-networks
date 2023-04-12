@@ -63,7 +63,7 @@ abcd_imgincl01 <- abcd_imgincl01[!abcd_imgincl01$visit=="",]
 abcd_imgincl01 <- abcd_imgincl01[abcd_imgincl01$imgincl_t1w_include==1,]
 abcd_imgincl01 <- abcd_imgincl01[abcd_imgincl01$imgincl_rsfmri_include==1,] 
 
-combined.data <- merge(data.clean,abcd_imgincl01[, c("subjectkey",'imgincl_t1w_include')],by="subjectkey") 
+combined.data1 <- merge(data.clean,abcd_imgincl01[, c("subjectkey",'imgincl_t1w_include')],by="subjectkey") 
 ```
 
 
@@ -73,14 +73,14 @@ combined.data <- merge(data.clean,abcd_imgincl01[, c("subjectkey",'imgincl_t1w_i
 newdata<-readRDS("/Users/askeller/Documents/Kellernet_PrelimAnalysis/DEAP-data-download_ThompsonScores_ResFamIncome.rds")
 newdata.baseline<-newdata[newdata$event_name=="baseline_year_1_arm_1",]
 colnames(newdata.baseline)[1]<-"subjectkey"
-all.data <- merge(combined.data,newdata.baseline[,c("subjectkey", setdiff(colnames(newdata.baseline),colnames(combined.data)))],by="subjectkey")
+all.data <- merge(combined.data1,newdata.baseline[,c("subjectkey", setdiff(colnames(newdata.baseline),colnames(combined.data1)))],by="subjectkey")
 
 # for simplicity, rename thompson variables
 colnames(all.data)<-gsub("neurocog_pc1.bl","thompson_PC1",colnames(all.data))
 colnames(all.data)<-gsub("neurocog_pc2.bl","thompson_PC2",colnames(all.data))
 colnames(all.data)<-gsub("neurocog_pc3.bl","thompson_PC3",colnames(all.data))
-```
 
+```
 
 
 # Add in Family and Site covariates
@@ -158,27 +158,51 @@ abcd.data.traintest$interview_age <- as.numeric(abcd.data.traintest$interview_ag
 
 # standardize all variables for LMER (separately in Discovery and Replication samples)
 ```{r}
+abcd.data.train.harmonized$PFN1<-(abcd.data.train.harmonized$PFN1-mean(abcd.data.train.harmonized$PFN1,na.rm=TRUE))/sd(abcd.data.train.harmonized$PFN1,na.rm=TRUE)
+abcd.data.train.harmonized$PFN2<-(abcd.data.train.harmonized$PFN2-mean(abcd.data.train.harmonized$PFN2,na.rm=TRUE))/sd(abcd.data.train.harmonized$PFN2,na.rm=TRUE)
 abcd.data.train.harmonized$PFN3<-(abcd.data.train.harmonized$PFN3-mean(abcd.data.train.harmonized$PFN3,na.rm=TRUE))/sd(abcd.data.train.harmonized$PFN3,na.rm=TRUE)
-
+abcd.data.train.harmonized$PFN4<-(abcd.data.train.harmonized$PFN4-mean(abcd.data.train.harmonized$PFN4,na.rm=TRUE))/sd(abcd.data.train.harmonized$PFN4,na.rm=TRUE)
+abcd.data.train.harmonized$PFN5<-(abcd.data.train.harmonized$PFN5-mean(abcd.data.train.harmonized$PFN5,na.rm=TRUE))/sd(abcd.data.train.harmonized$PFN5,na.rm=TRUE)
+abcd.data.train.harmonized$PFN6<-(abcd.data.train.harmonized$PFN6-mean(abcd.data.train.harmonized$PFN6,na.rm=TRUE))/sd(abcd.data.train.harmonized$PFN6,na.rm=TRUE)
+abcd.data.train.harmonized$PFN7<-(abcd.data.train.harmonized$PFN7-mean(abcd.data.train.harmonized$PFN7,na.rm=TRUE))/sd(abcd.data.train.harmonized$PFN7,na.rm=TRUE)
+abcd.data.train.harmonized$PFN8<-(abcd.data.train.harmonized$PFN8-mean(abcd.data.train.harmonized$PFN8,na.rm=TRUE))/sd(abcd.data.train.harmonized$PFN8,na.rm=TRUE)
+abcd.data.train.harmonized$PFN9<-(abcd.data.train.harmonized$PFN9-mean(abcd.data.train.harmonized$PFN9,na.rm=TRUE))/sd(abcd.data.train.harmonized$PFN9,na.rm=TRUE)
+abcd.data.train.harmonized$PFN10<-(abcd.data.train.harmonized$PFN10-mean(abcd.data.train.harmonized$PFN10,na.rm=TRUE))/sd(abcd.data.train.harmonized$PFN10,na.rm=TRUE)
+abcd.data.train.harmonized$PFN11<-(abcd.data.train.harmonized$PFN11-mean(abcd.data.train.harmonized$PFN11,na.rm=TRUE))/sd(abcd.data.train.harmonized$PFN11,na.rm=TRUE)
+abcd.data.train.harmonized$PFN12<-(abcd.data.train.harmonized$PFN12-mean(abcd.data.train.harmonized$PFN12,na.rm=TRUE))/sd(abcd.data.train.harmonized$PFN12,na.rm=TRUE)
+abcd.data.train.harmonized$PFN13<-(abcd.data.train.harmonized$PFN13-mean(abcd.data.train.harmonized$PFN13,na.rm=TRUE))/sd(abcd.data.train.harmonized$PFN13,na.rm=TRUE)
+abcd.data.train.harmonized$PFN14<-(abcd.data.train.harmonized$PFN14-mean(abcd.data.train.harmonized$PFN14,na.rm=TRUE))/sd(abcd.data.train.harmonized$PFN14,na.rm=TRUE)
 abcd.data.train.harmonized$PFN15<-(abcd.data.train.harmonized$PFN15-mean(abcd.data.train.harmonized$PFN15,na.rm=TRUE))/sd(abcd.data.train.harmonized$PFN15,na.rm=TRUE)
-
+abcd.data.train.harmonized$PFN16<-(abcd.data.train.harmonized$PFN16-mean(abcd.data.train.harmonized$PFN16,na.rm=TRUE))/sd(abcd.data.train.harmonized$PFN16,na.rm=TRUE)
 abcd.data.train.harmonized$PFN17<-(abcd.data.train.harmonized$PFN17-mean(abcd.data.train.harmonized$PFN17,na.rm=TRUE))/sd(abcd.data.train.harmonized$PFN17,na.rm=TRUE)
 
+abcd.data.test.harmonized$PFN1<-(abcd.data.test.harmonized$PFN1-mean(abcd.data.test.harmonized$PFN1,na.rm=TRUE))/sd(abcd.data.test.harmonized$PFN1,na.rm=TRUE)
+abcd.data.test.harmonized$PFN2<-(abcd.data.test.harmonized$PFN2-mean(abcd.data.test.harmonized$PFN2,na.rm=TRUE))/sd(abcd.data.test.harmonized$PFN2,na.rm=TRUE)
 abcd.data.test.harmonized$PFN3<-(abcd.data.test.harmonized$PFN3-mean(abcd.data.test.harmonized$PFN3,na.rm=TRUE))/sd(abcd.data.test.harmonized$PFN3,na.rm=TRUE)
-
+abcd.data.test.harmonized$PFN4<-(abcd.data.test.harmonized$PFN4-mean(abcd.data.test.harmonized$PFN4,na.rm=TRUE))/sd(abcd.data.test.harmonized$PFN4,na.rm=TRUE)
+abcd.data.test.harmonized$PFN5<-(abcd.data.test.harmonized$PFN5-mean(abcd.data.test.harmonized$PFN5,na.rm=TRUE))/sd(abcd.data.test.harmonized$PFN5,na.rm=TRUE)
+abcd.data.test.harmonized$PFN6<-(abcd.data.test.harmonized$PFN6-mean(abcd.data.test.harmonized$PFN6,na.rm=TRUE))/sd(abcd.data.test.harmonized$PFN6,na.rm=TRUE)
+abcd.data.test.harmonized$PFN7<-(abcd.data.test.harmonized$PFN7-mean(abcd.data.test.harmonized$PFN7,na.rm=TRUE))/sd(abcd.data.test.harmonized$PFN7,na.rm=TRUE)
+abcd.data.test.harmonized$PFN8<-(abcd.data.test.harmonized$PFN8-mean(abcd.data.test.harmonized$PFN8,na.rm=TRUE))/sd(abcd.data.test.harmonized$PFN8,na.rm=TRUE)
+abcd.data.test.harmonized$PFN9<-(abcd.data.test.harmonized$PFN9-mean(abcd.data.test.harmonized$PFN9,na.rm=TRUE))/sd(abcd.data.test.harmonized$PFN9,na.rm=TRUE)
+abcd.data.test.harmonized$PFN10<-(abcd.data.test.harmonized$PFN10-mean(abcd.data.test.harmonized$PFN10,na.rm=TRUE))/sd(abcd.data.test.harmonized$PFN10,na.rm=TRUE)
+abcd.data.test.harmonized$PFN11<-(abcd.data.test.harmonized$PFN11-mean(abcd.data.test.harmonized$PFN11,na.rm=TRUE))/sd(abcd.data.test.harmonized$PFN11,na.rm=TRUE)
+abcd.data.test.harmonized$PFN12<-(abcd.data.test.harmonized$PFN12-mean(abcd.data.test.harmonized$PFN12,na.rm=TRUE))/sd(abcd.data.test.harmonized$PFN12,na.rm=TRUE)
+abcd.data.test.harmonized$PFN13<-(abcd.data.test.harmonized$PFN13-mean(abcd.data.test.harmonized$PFN13,na.rm=TRUE))/sd(abcd.data.test.harmonized$PFN13,na.rm=TRUE)
+abcd.data.test.harmonized$PFN14<-(abcd.data.test.harmonized$PFN14-mean(abcd.data.test.harmonized$PFN14,na.rm=TRUE))/sd(abcd.data.test.harmonized$PFN14,na.rm=TRUE)
 abcd.data.test.harmonized$PFN15<-(abcd.data.test.harmonized$PFN15-mean(abcd.data.test.harmonized$PFN15,na.rm=TRUE))/sd(abcd.data.test.harmonized$PFN15,na.rm=TRUE)
-
+abcd.data.test.harmonized$PFN16<-(abcd.data.test.harmonized$PFN16-mean(abcd.data.test.harmonized$PFN16,na.rm=TRUE))/sd(abcd.data.test.harmonized$PFN16,na.rm=TRUE)
 abcd.data.test.harmonized$PFN17<-(abcd.data.test.harmonized$PFN17-mean(abcd.data.test.harmonized$PFN17,na.rm=TRUE))/sd(abcd.data.test.harmonized$PFN17,na.rm=TRUE)
 
 
 abcd.data.train.harmonized$interview_age<-(abcd.data.train.harmonized$interview_age-mean(abcd.data.train.harmonized$interview_age,na.rm=TRUE))/sd(abcd.data.train.harmonized$interview_age,na.rm=TRUE)
-
 abcd.data.test.harmonized$interview_age<-(abcd.data.test.harmonized$interview_age-mean(abcd.data.test.harmonized$interview_age,na.rm=TRUE))/sd(abcd.data.test.harmonized$interview_age,na.rm=TRUE)
 
 abcd.data.train.harmonized$meanFD<-(abcd.data.train.harmonized$meanFD-mean(abcd.data.train.harmonized$meanFD,na.rm=TRUE))/sd(abcd.data.train.harmonized$meanFD,na.rm=TRUE)
-
 abcd.data.test.harmonized$meanFD<-(abcd.data.test.harmonized$meanFD-mean(abcd.data.test.harmonized$meanFD,na.rm=TRUE))/sd(abcd.data.test.harmonized$meanFD,na.rm=TRUE)
 
+abcd.data.train.harmonized$reshist_addr1_adi_income<-(abcd.data.train.harmonized$reshist_addr1_adi_income-mean(abcd.data.train.harmonized$reshist_addr1_adi_income,na.rm=TRUE))/sd(abcd.data.train.harmonized$reshist_addr1_adi_income,na.rm=TRUE)
+abcd.data.test.harmonized$reshist_addr1_adi_income<-(abcd.data.test.harmonized$reshist_addr1_adi_income-mean(abcd.data.test.harmonized$reshist_addr1_adi_income,na.rm=TRUE))/sd(abcd.data.test.harmonized$reshist_addr1_adi_income,na.rm=TRUE)
 ```
 
 
@@ -203,7 +227,23 @@ mod6<-lmer(PFN17~interview_age+sex+(1|rel_family_id)+meanFD+thompson_PC1,data=ab
 tab_model(mod1,mod2,mod3,pred.labels = c("Intercept","Age","Sex","Mean FD","General Cognition"),dv.labels=c("PFN 3","PFN 15","PFN 17"),digits=2,digits.p=2,show.se=TRUE,show.stat=TRUE,string.stat = "t",string.se = "Std. Error",show.intercept=TRUE,show.ci = FALSE, p.adjust="none",p.style="scientific", file = "/Users/askeller/Documents/Writing_InProgress/PFNs_Cognition/Associations_TableX_Discovery.doc")
 
 tab_model(mod4,mod5,mod6,pred.labels = c("Intercept","Age","Sex","Mean FD","General Cognition"),dv.labels=c("PFN 3","PFN 15","PFN 17"),digits=2,digits.p=2,show.se=TRUE,show.stat=TRUE,string.stat = "t",string.se = "Std. Error",show.intercept=TRUE,show.ci = FALSE, p.adjust="none",p.style="scientific", file = "/Users/askeller/Documents/Writing_InProgress/PFNs_Cognition/Associations_TableX_Replication.doc")
+
+
+# sensitivity analysis with ADI as an additional covariate:
+mod101<-lmer(PFN3~interview_age+sex+(1|rel_family_id)+meanFD+reshist_addr1_adi_income+thompson_PC1,data=abcd.data.train.harmonized)
+mod102<-lmer(PFN15~interview_age+sex+(1|rel_family_id)+meanFD+reshist_addr1_adi_income+thompson_PC1,data=abcd.data.train.harmonized)
+mod103<-lmer(PFN17~interview_age+sex+(1|rel_family_id)+meanFD+reshist_addr1_adi_income+thompson_PC1,data=abcd.data.train.harmonized)
+mod104<-lmer(PFN3~interview_age+sex+(1|rel_family_id)+meanFD+reshist_addr1_adi_income+thompson_PC1,data=abcd.data.test.harmonized)
+mod105<-lmer(PFN15~interview_age+sex+(1|rel_family_id)+meanFD+reshist_addr1_adi_income+thompson_PC1,data=abcd.data.test.harmonized)
+mod106<-lmer(PFN17~interview_age+sex+(1|rel_family_id)+meanFD+reshist_addr1_adi_income+thompson_PC1,data=abcd.data.test.harmonized)
+
+tab_model(mod101,mod102,mod103,pred.labels = c("Intercept","Age","Sex","Mean FD","ADI","General Cognition"),dv.labels=c("PFN 3","PFN 15","PFN 17"),digits=2,digits.p=2,show.se=TRUE,show.stat=TRUE,string.stat = "t",string.se = "Std. Error",show.intercept=TRUE,show.ci = FALSE, p.adjust="none",p.style="scientific", file = "/Users/askeller/Documents/Writing_InProgress/PFNs_Cognition/ADI_Sensitivity_TableX_Discovery.doc")
+
+tab_model(mod104,mod105,mod106,pred.labels = c("Intercept","Age","Sex","Mean FD","ADI","General Cognition"),dv.labels=c("PFN 3","PFN 15","PFN 17"),digits=2,digits.p=2,show.se=TRUE,show.stat=TRUE,string.stat = "t",string.se = "Std. Error",show.intercept=TRUE,show.ci = FALSE, p.adjust="none",p.style="scientific", file = "/Users/askeller/Documents/Writing_InProgress/PFNs_Cognition/ADI_Sensitivity_TableX_Replication.doc")
+
+
 ```
+
 
 # get confidence intervals
 ```{r}
@@ -217,31 +257,68 @@ confint(lmer(PFN17~interview_age+sex+(1|rel_family_id)+meanFD+thompson_PC1,data=
 ```
 
 
-# Make a demographics table
+# Prep/add data for demographics table
 ```{r}
+
 # exclude subjects with missing cognitive data
 abcd.data.for.ridge<-abcd.data.traintest[,c("subjectkey","thompson_PC1","thompson_PC2","thompson_PC3","matched_group","interview_age","sex","meanFD","abcd_site","rel_family_id")]
-
 abcd.data.traintest<-abcd.data.traintest[complete.cases(abcd.data.for.ridge),]
 
+cbcl<-read.table("/Users/askeller/Documents/Kellernet_PrelimAnalysis/aseba/abcd_cbcls01.txt",header=TRUE)
+cbcl_baseline <- cbcl[cbcl$eventname=="baseline_year_1_arm_1",c("subjectkey","cbcl_scr_syn_internal_r","cbcl_scr_syn_external_r","cbcl_scr_syn_totprob_r")]
+cbcl_baseline$cbcl_scr_syn_internal_r <- as.numeric(cbcl_baseline$cbcl_scr_syn_internal_r)
+cbcl_baseline$cbcl_scr_syn_external_r <- as.numeric(cbcl_baseline$cbcl_scr_syn_external_r)
+cbcl_baseline$cbcl_scr_syn_totprob_r <- as.numeric(cbcl_baseline$cbcl_scr_syn_totprob_r)
 
+psychMed<-read.csv("/Users/askeller/Documents/Kellernet_PrelimAnalysis/RevisionAnalyses_PFNsCog/PsychotropicMeds/ABCD_Psychotropic_Medications.csv")
+psychMed_baseline <- psychMed[psychMed$eventname=="baseline_year_1_arm_1",c("subjectkey","ADHD_meds","Antidepressant_meds","Antipsychotic_meds")]
+psychMed_baseline$ADHD_meds<-as.factor(psychMed_baseline$ADHD_meds)
+psychMed_baseline$Antipsychotic_meds<-as.factor(psychMed_baseline$Antipsychotic_meds)
+psychMed_baseline$Antidepressant_meds<-as.factor(psychMed_baseline$Antidepressant_meds)
+
+abcd.data.traintest<-merge(abcd.data.traintest,cbcl_baseline,by="subjectkey")
+abcd.data.traintest<-merge(abcd.data.traintest,psychMed_baseline,by="subjectkey")
+
+abcd.data.traintest$ADHD_meds<-factor(abcd.data.traintest$ADHD_meds, levels = c("1","0"))
+abcd.data.traintest$Antidepressant_meds<-factor(abcd.data.traintest$Antidepressant_meds, levels = c("1","0"))
+abcd.data.traintest$Antipsychotic_meds<-factor(abcd.data.traintest$Antipsychotic_meds, levels = c("1","0"))
+
+
+
+```
+
+
+# Make a demographics table
+```{r}
 library(Gmisc)
 demo_table <- abcd.data.traintest %>%
   mutate(matched_group = factor(matched_group, levels = 1:2, labels = c("Discovery", "Replication"))) %>%
 #subset(matched_group<3) %>%
   set_column_labels(interview_age = "Age (Months)",
-                    sex = "Sex",
+                    sex = "Sex (F)",
                     race.6level = "Race",
                     household.income = "Household Income",
+                    high.educ = "Parent Education",
                     thompson_PC1 = "General Cognition",
                     thompson_PC2 = "Executive Function",
                     thompson_PC3 = "Learning/Memory",
-                    high.educ = "Parent Education") %>%
-getDescriptionStatsBy(interview_age, 
+                    ADHD_meds = "ADHD Medications",
+                    Antidepressant_meds = "Antidepressant Medication",
+                    Antipsychotic_meds = "Antipsychotic Medication",
+                    cbcl_scr_syn_internal_r = "CBCL Int.",
+                    cbcl_scr_syn_external_r = "CBCL Ext.",
+                    cbcl_scr_syn_totprob_r = "CBCL Prob.") %>%
+getDescriptionStatsBy(interview_age,
                         sex,
                         thompson_PC1,
                         thompson_PC2,
                         thompson_PC3,
+                        ADHD_meds,
+                        Antidepressant_meds,
+                        Antipsychotic_meds,
+                        cbcl_scr_syn_external_r,
+                        cbcl_scr_syn_internal_r,
+                        cbcl_scr_syn_totprob_r,
                         household.income,
                         race.6level,
                         high.educ,
@@ -256,73 +333,83 @@ demo_table
 ```{r}
 correlation<-cor.test(abcd.data.train.harmonized$thompson_PC1,abcd.data.train.harmonized$PFN17)
 png("/Users/askeller/Documents/Kellernet_PrelimAnalysis/CuiRep_032322/PC1_PFN17_train.png",
-    width = 3000, 
+    width = 3000,
     height = 3000,
     res=1200)
 ggplot(data=abcd.data.train.harmonized,aes(abcd.data.train.harmonized$thompson_PC1,abcd.data.train.harmonized$PFN17))+geom_point(size=0.1,colour="#F5BA2E")+geom_smooth(method=lm,colour="#F5BA2E")+ theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank(),
 panel.background = element_blank(), axis.line = element_line(colour = "black"),axis.text.x = element_text(color="black"),
     axis.ticks = element_line(color = "black"),axis.text.y = element_text(color="black")) +ylab('Total Representation') + xlab('General Cognition') + ggtitle(paste("r=",as.character(round(correlation$estimate,3)),", p=",as.character(round(correlation$p.value,3))))
-dev.off() 
+dev.off()
 
 
 correlation<-cor.test(abcd.data.train.harmonized$thompson_PC1,abcd.data.train.harmonized$PFN15)
 png("/Users/askeller/Documents/Kellernet_PrelimAnalysis/CuiRep_032322/PC1_PFN15_train.png",
-    width = 3000, 
+    width = 3000,
     height = 3000,
     res=1200)
 ggplot(data=abcd.data.train.harmonized,aes(abcd.data.train.harmonized$thompson_PC1,abcd.data.train.harmonized$PFN15))+geom_point(size=0.1,colour="#F5BA2E")+geom_smooth(method=lm,colour="#F5BA2E")+ theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank(),
 panel.background = element_blank(), axis.line = element_line(colour = "black"),axis.text.x = element_text(color="black"),
     axis.ticks = element_line(color = "black"),axis.text.y = element_text(color="black")) +ylab('Total Representation') + xlab('General Cognition') + ggtitle(paste("r=",as.character(round(correlation$estimate,3)),", p=",as.character(round(correlation$p.value,3))))
-dev.off() 
+dev.off()
 
 
 
 correlation<-cor.test(abcd.data.test.harmonized$thompson_PC1,abcd.data.test.harmonized$PFN17)
 png("/Users/askeller/Documents/Kellernet_PrelimAnalysis/CuiRep_032322/PC1_PFN17_test.png",
-    width = 3000, 
+    width = 3000,
     height = 3000,
     res=1200)
 ggplot(data=abcd.data.test.harmonized,aes(abcd.data.test.harmonized$thompson_PC1,abcd.data.test.harmonized$PFN17))+geom_point(size=0.1,colour="#F5BA2E")+geom_smooth(method=lm,colour="#F5BA2E")+ theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank(),
 panel.background = element_blank(), axis.line = element_line(colour = "black"),axis.text.x = element_text(color="black"),
     axis.ticks = element_line(color = "black"),axis.text.y = element_text(color="black")) +ylab('Total Representation') + xlab('General Cognition') + ggtitle(paste("r=",as.character(round(correlation$estimate,3)),", p=",as.character(round(correlation$p.value,3))))
-dev.off() 
+dev.off()
 
 
 correlation<-cor.test(abcd.data.test.harmonized$thompson_PC1,abcd.data.test.harmonized$PFN15)
 png("/Users/askeller/Documents/Kellernet_PrelimAnalysis/CuiRep_032322/PC1_PFN15_test.png",
-    width = 3000, 
+    width = 3000,
     height = 3000,
     res=1200)
 ggplot(data=abcd.data.test.harmonized,aes(abcd.data.test.harmonized$thompson_PC1,abcd.data.test.harmonized$PFN15))+geom_point(size=0.1,colour="#F5BA2E")+geom_smooth(method=lm,colour="#F5BA2E")+ theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank(),
 panel.background = element_blank(), axis.line = element_line(colour = "black"),axis.text.x = element_text(color="black"),
     axis.ticks = element_line(color = "black"),axis.text.y = element_text(color="black")) +ylab('Total Representation') + xlab('General Cognition') + ggtitle(paste("r=",as.character(round(correlation$estimate,3)),", p=",as.character(round(correlation$p.value,3))))
-dev.off() 
+dev.off()
 
 
 
 
 correlation<-cor.test(abcd.data.train.harmonized$thompson_PC1,abcd.data.train.harmonized$PFN3)
 png("/Users/askeller/Documents/Kellernet_PrelimAnalysis/CuiRep_032322/PC1_PFN3_train.png",
-    width = 3000, 
+    width = 3000,
     height = 3000,
     res=1200)
 ggplot(data=abcd.data.train.harmonized,aes(abcd.data.train.harmonized$thompson_PC1,abcd.data.train.harmonized$PFN3))+geom_point(size=0.1,colour="#F5BA2E")+geom_smooth(method=lm,colour="#F5BA2E")+ theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank(),
 panel.background = element_blank(), axis.line = element_line(colour = "black"),axis.text.x = element_text(color="black"),
     axis.ticks = element_line(color = "black"),axis.text.y = element_text(color="black")) +ylab('Total Representation') + xlab('General Cognition') + ggtitle(paste("r=",as.character(round(correlation$estimate,3)),", p=",as.character(round(correlation$p.value,3))))
-dev.off() 
+dev.off()
 
 
 correlation<-cor.test(abcd.data.test.harmonized$thompson_PC1,abcd.data.test.harmonized$PFN3)
 png("/Users/askeller/Documents/Kellernet_PrelimAnalysis/CuiRep_032322/PC1_PFN3_test.png",
-    width = 3000, 
+    width = 3000,
     height = 3000,
     res=1200)
 ggplot(data=abcd.data.test.harmonized,aes(abcd.data.test.harmonized$thompson_PC1,abcd.data.test.harmonized$PFN3))+geom_point(size=0.1,colour="#F5BA2E")+geom_smooth(method=lm,colour="#F5BA2E")+ theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank(),
 panel.background = element_blank(), axis.line = element_line(colour = "black"),axis.text.x = element_text(color="black"),
     axis.ticks = element_line(color = "black"),axis.text.y = element_text(color="black")) +ylab('Total Representation') + xlab('General Cognition') + ggtitle(paste("r=",as.character(round(correlation$estimate,3)),", p=",as.character(round(correlation$p.value,3))))
-dev.off() 
+dev.off()
 
 
+```
+
+
+
+# Look for effects of SES on total cortical representation
+```{r}
+ADI_mod1<-lmer(reshist_addr1_adi_income~interview_age+sex+(1|rel_family_id)+meanFD+PFN1+PFN2+PFN3+PFN4+PFN5+PFN6+PFN7+PFN8+PFN9+PFN10+PFN11+PFN12+PFN13+PFN14+PFN15+PFN16+PFN17,data=abcd.data.train.harmonized)
+ADI_mod2<-lmer(reshist_addr1_adi_income~interview_age+sex+(1|rel_family_id)+meanFD+PFN1+PFN2+PFN3+PFN4+PFN5+PFN6+PFN7+PFN8+PFN9+PFN10+PFN11+PFN12+PFN13+PFN14+PFN15+PFN16+PFN17,data=abcd.data.test.harmonized)
+
+tab_model(ADI_mod1,ADI_mod2,pred.labels = c("Intercept","Age","Sex","Motion","PFN1","PFN2","PFN3","PFN4","PFN5","PFN6","PFN7","PFN8","PFN9","PFN10","PFN11","PFN12","PFN13","PFN14","PFN15","PFN16","PFN17"),dv.labels=c("ADI (Discovery)","ADI (Replication)"),digits=2,digits.p=2,show.se=TRUE,show.stat=TRUE,string.stat = "t",string.se = "Std. Error",show.intercept=TRUE,show.ci = FALSE, p.adjust="bonferroni",p.style="scientific", file = "/Users/askeller/Documents/Kellernet_PrelimAnalysis/RevisionAnalyses_PFNsCog/SES/ADI_by_PFN.doc")
 ```
 
 
@@ -361,6 +448,11 @@ keep_p <- ifelse(p_vec_adj<.05,1,0)
 
 z_vec_sorted = rank(z_vec_pn_train);
 
+net_locs = c()
+for (i in 1:17){
+  net_locs <- c(net_locs,which(z_vec_sorted==i))
+}
+
 # Using 7 colors scheme for bar plot
 # bar plot for cognition effects
 data <- data.frame(CognitionEffects_Z = as.numeric(z_vec_pn_train)) 
@@ -369,27 +461,22 @@ BorderColor <- c("#E76178", "#7499C2", "#F5BA2E", "#7499C2", "#00A131",
                  "#AF33AD", "#E443FF", "#E76178", "#E443FF", "#AF33AD",
                  "#7499C2", "#E76178", "#7499C2", "#00A131", "#F5BA2E", 
                  "#4E31A8", "#F5BA2E");
-LineType <- c("dashed", "solid", "solid", "solid", "dashed", "dashed",
-              "dashed", "dashed", "dashed", "dashed", "dashed", "dashed",
-              "dashed", "dashed", "solid", "dashed", "solid");
+LineType <- ifelse(keep_p==1,"solid","dashed");
 Fig <- ggplot(data, aes(EffectRank, CognitionEffects_Z)) +
-  geom_bar(stat = "identity", fill=c("#FFFFFF", "#7499C2", "#F5BA2E",
-                                     "#7499C2", "#FFFFFF", "#FFFFFF", "#FFFFFF", "#FFFFFF",
-                                     "#FFFFFF", "#FFFFFF", "#FFFFFF", "#FFFFFF", "#FFFFFF",
-                                     "#FFFFFF", "#F5BA2E", "#FFFFFF", "#F5BA2E"), 
-           colour = BorderColor, linetype = LineType, width = 0.8) + 
+  geom_bar(stat = "identity", fill=ifelse(keep_p==1,BorderColor,"#FFFFFF"), 
+           colour = BorderColor, linetype = LineType, width = 0.8) + ylim(-8.5,5.5) +
   labs(x = "Networks", y = expression(paste("Cognition Association (", italic("Z"), ")"))) + theme_classic() +
-  theme(axis.text.x = ggtext::element_markdown(size= 27, color = BorderColor[c(4,2,11,10,1,9,5,16,14,12,7,8,13,6,3,15,17)]), 
+  theme(axis.text.x = ggtext::element_markdown(size= 27, color = BorderColor[net_locs]), 
         axis.text.y = ggtext::element_markdown(size= 33, color = "black"), 
         axis.title=ggtext::element_markdown(size = 33)) +
   theme(axis.text.x = ggtext::element_markdown(angle = 45, hjust = 1)) +
-  scale_x_discrete(labels = c('4','2','11','10','1','9','5','16','14','12','7','8','13','6','3','15','17'),limits = c('5','2','15','1','7','14','11','12','6','4','3','10','13','9','16','8','17')) 
+  scale_x_discrete(labels = as.character(net_locs),limits = as.character(z_vec_sorted)) 
 Fig
-ggsave('/Users/askeller/Documents/Kellernet_PrelimAnalysis/CuiRep_032322/NetworkSize_Loading_CogEffects.tiff', width = 19, height = 16, dpi = 600, units = "cm");
-
-
+ggsave('/Users/askeller/Documents/Kellernet_PrelimAnalysis/CuiRep_032322/NetworkSize_Loading_CogEffects_Disc_Revision.tiff', width = 19, height = 16, dpi = 600, units = "cm");
 
 ```
+
+
 
 
 ### Bar plot (Replication Sample):
@@ -426,6 +513,11 @@ keep_p <- ifelse(p_vec_adj<.05,1,0)
 
 z_vec_sorted = rank(z_vec_pn_test);
 
+net_locs = c()
+for (i in 1:17){
+  net_locs <- c(net_locs,which(z_vec_sorted==i))
+}
+
 # Using 7 colors scheme for bar plot
 # bar plot for cognition effects
 data <- data.frame(CognitionEffects_Z = as.numeric(z_vec_pn_test)) 
@@ -434,32 +526,39 @@ BorderColor <- c("#E76178", "#7499C2", "#F5BA2E", "#7499C2", "#00A131",
                  "#AF33AD", "#E443FF", "#E76178", "#E443FF", "#AF33AD",
                  "#7499C2", "#E76178", "#7499C2", "#00A131", "#F5BA2E", 
                  "#4E31A8", "#F5BA2E");
-LineType <- c("dashed", "dashed", "solid", "solid", "dashed", "solid",
-              "dashed", "dashed", "dashed", "dashed", "dashed", "dashed",
-              "dashed", "dashed", "solid", "dashed", "solid");
+LineType <- ifelse(keep_p==1,"solid","dashed");
 Fig <- ggplot(data, aes(EffectRank, CognitionEffects_Z)) +
-  geom_bar(stat = "identity", fill=c("#FFFFFF", "#FFFFFF", "#F5BA2E",
-                                     "#7499C2", "#FFFFFF", "#AF33AD", "#FFFFFF", "#FFFFFF",
-                                     "#FFFFFF", "#FFFFFF", "#FFFFFF", "#FFFFFF", "#FFFFFF",
-                                     "#FFFFFF", "#F5BA2E", "#FFFFFF", "#F5BA2E"), 
-           colour = BorderColor, linetype = LineType, width = 0.8) + 
+  geom_bar(stat = "identity", fill=ifelse(keep_p==1,BorderColor,"#FFFFFF"), 
+           colour = BorderColor, linetype = LineType, width = 0.8) + ylim(-8.5,5.5) + 
   labs(x = "Networks", y = expression(paste("Cognition Association (", italic("Z"), ")"))) + theme_classic() +
-  theme(axis.text.x = ggtext::element_markdown(size= 27, color = BorderColor[c(4,13,9,2,7,12,10,5,16,14,8,1,11,3,15,17,6)]), 
+  theme(axis.text.x = ggtext::element_markdown(size= 27, color = BorderColor[net_locs]), 
         axis.text.y = ggtext::element_markdown(size= 33, color = "black"), 
         axis.title=ggtext::element_markdown(size = 33)) +
   theme(axis.text.x = ggtext::element_markdown(angle = 45, hjust = 1)) +
-  scale_x_discrete(labels = c('4','13','9','2','7','12','10','5','16','14','8','1','11','3','15','17','6'),limits = c('12','4','14','1','8','17','5','11','3','7','13','6','2','10','15','9','16')) # + scale_y_continuous(limits = c(-4, 6), breaks = c(-4, -2, 0, 2, 4, 6));
+  scale_x_discrete(labels = as.character(net_locs),limits = as.character(z_vec_sorted)) 
 Fig
-ggsave('/Users/askeller/Documents/Kellernet_PrelimAnalysis/CuiRep_032322/NetworkSize_Loading_CogEffects_test.tiff', width = 19, height = 16, dpi = 600, units = "cm");
+ggsave('/Users/askeller/Documents/Kellernet_PrelimAnalysis/CuiRep_032322/NetworkSize_Loading_CogEffects_Rep_Revision.tiff', width = 19, height = 16, dpi = 600, units = "cm");
 
 
 ```
 
 
+# Test whether results hold with covariates for psychotropic med use:
+```{r}
+abcd.data.train.harmonized.withMeds <- merge(abcd.data.train.harmonized,abcd.data.traintest[,c("subjectkey", setdiff(colnames(abcd.data.traintest),colnames(abcd.data.train.harmonized)))],by="subjectkey")
+abcd.data.test.harmonized.withMeds <- merge(abcd.data.test.harmonized,abcd.data.traintest[,c("subjectkey", setdiff(colnames(abcd.data.traintest),colnames(abcd.data.test.harmonized)))],by="subjectkey")
 
+mod1<-lmer(PFN3~interview_age+sex+(1|rel_family_id)+meanFD+ADHD_meds+Antipsychotic_meds+Antidepressant_meds+thompson_PC1,data=abcd.data.train.harmonized.withMeds)
+mod2<-lmer(PFN15~interview_age+sex+(1|rel_family_id)+meanFD+ADHD_meds+Antipsychotic_meds+Antidepressant_meds+thompson_PC1,data=abcd.data.train.harmonized.withMeds)
+mod3<-lmer(PFN17~interview_age+sex+(1|rel_family_id)+meanFD+ADHD_meds+Antipsychotic_meds+Antidepressant_meds+thompson_PC1,data=abcd.data.train.harmonized.withMeds)
+mod4<-lmer(PFN3~interview_age+sex+(1|rel_family_id)+meanFD+ADHD_meds+Antipsychotic_meds+Antidepressant_meds+thompson_PC1,data=abcd.data.test.harmonized.withMeds)
+mod5<-lmer(PFN15~interview_age+sex+(1|rel_family_id)+meanFD+ADHD_meds+Antipsychotic_meds+Antidepressant_meds+thompson_PC1,data=abcd.data.test.harmonized.withMeds)
+mod6<-lmer(PFN17~interview_age+sex+(1|rel_family_id)+meanFD+ADHD_meds+Antipsychotic_meds+Antidepressant_meds+thompson_PC1,data=abcd.data.test.harmonized.withMeds)
 
+tab_model(mod1,mod2,mod3,pred.labels = c("Intercept","Age","Sex","Mean FD","ADHD Meds","Antipsychotic Meds","Antidepressant Meds","General Cognition"),dv.labels=c("PFN 3","PFN 15","PFN 17"),digits=2,digits.p=2,show.se=TRUE,show.stat=TRUE,string.stat = "t",string.se = "Std. Error",show.intercept=TRUE,show.ci = FALSE, p.adjust="none",p.style="scientific", file = "/Users/askeller/Documents/Kellernet_PrelimAnalysis/RevisionAnalyses_PFNsCog/PsychMedUse/Associations_TableX_Disc_PsychMed.doc")
 
-
+tab_model(mod4,mod5,mod6,pred.labels = c("Intercept","Age","Sex","Mean FD","ADHD Meds","Antipsychotic Meds","Antidepressant Meds","General Cognition"),dv.labels=c("PFN 3","PFN 15","PFN 17"),digits=2,digits.p=2,show.se=TRUE,show.stat=TRUE,string.stat = "t",string.se = "Std. Error",show.intercept=TRUE,show.ci = FALSE, p.adjust="none",p.style="scientific", file = "/Users/askeller/Documents/Kellernet_PrelimAnalysis/RevisionAnalyses_PFNsCog/PsychMedUse/Associations_TableX_Rep_PsychMed.doc")
+```
 
 
 
