@@ -1,0 +1,135 @@
+---
+title: "SplitHalf_ICC"
+output: html_document
+date: '2023-01-25'
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(psych)
+library(reshape2)
+library(gifti)
+library(RNifti)
+library(ciftiTools)
+ciftiTools.setOption('wb_path', '/Users/askeller/Documents/workbench/')
+library(ggplot2)
+
+```
+
+# Load in the csvs
+
+```{r}
+sub1_Va<-read.csv('/Users/askeller/Documents/Kellernet_PrelimAnalysis/RevisionAnalyses_PFNsCog/SplitHalfReliability/SingleParcel_1by1_SH/finalV_csvs/sub1_Va.csv',header=FALSE)
+sub1_Vb<-read.csv('/Users/askeller/Documents/Kellernet_PrelimAnalysis/RevisionAnalyses_PFNsCog/SplitHalfReliability/SingleParcel_1by1_SH/finalV_csvs/sub1_Vb.csv',header=FALSE)
+sub2_Va<-read.csv('/Users/askeller/Documents/Kellernet_PrelimAnalysis/RevisionAnalyses_PFNsCog/SplitHalfReliability/SingleParcel_1by1_SH/finalV_csvs/sub2_Va.csv',header=FALSE)
+sub2_Vb<-read.csv('/Users/askeller/Documents/Kellernet_PrelimAnalysis/RevisionAnalyses_PFNsCog/SplitHalfReliability/SingleParcel_1by1_SH/finalV_csvs/sub2_Vb.csv',header=FALSE)
+sub3_Va<-read.csv('/Users/askeller/Documents/Kellernet_PrelimAnalysis/RevisionAnalyses_PFNsCog/SplitHalfReliability/SingleParcel_1by1_SH/finalV_csvs/sub3_Va.csv',header=FALSE)
+sub3_Vb<-read.csv('/Users/askeller/Documents/Kellernet_PrelimAnalysis/RevisionAnalyses_PFNsCog/SplitHalfReliability/SingleParcel_1by1_SH/finalV_csvs/sub3_Vb.csv',header=FALSE)
+sub4_Va<-read.csv('/Users/askeller/Documents/Kellernet_PrelimAnalysis/RevisionAnalyses_PFNsCog/SplitHalfReliability/SingleParcel_1by1_SH/finalV_csvs/sub4_Va.csv',header=FALSE)
+sub4_Vb<-read.csv('/Users/askeller/Documents/Kellernet_PrelimAnalysis/RevisionAnalyses_PFNsCog/SplitHalfReliability/SingleParcel_1by1_SH/finalV_csvs/sub4_Vb.csv',header=FALSE)
+sub5_Va<-read.csv('/Users/askeller/Documents/Kellernet_PrelimAnalysis/RevisionAnalyses_PFNsCog/SplitHalfReliability/SingleParcel_1by1_SH/finalV_csvs/sub5_Va.csv',header=FALSE)
+sub5_Vb<-read.csv('/Users/askeller/Documents/Kellernet_PrelimAnalysis/RevisionAnalyses_PFNsCog/SplitHalfReliability/SingleParcel_1by1_SH/finalV_csvs/sub5_Vb.csv',header=FALSE)
+sub6_Va<-read.csv('/Users/askeller/Documents/Kellernet_PrelimAnalysis/RevisionAnalyses_PFNsCog/SplitHalfReliability/SingleParcel_1by1_SH/finalV_csvs/sub6_Va.csv',header=FALSE)
+sub6_Vb<-read.csv('/Users/askeller/Documents/Kellernet_PrelimAnalysis/RevisionAnalyses_PFNsCog/SplitHalfReliability/SingleParcel_1by1_SH/finalV_csvs/sub6_Vb.csv',header=FALSE)
+sub7_Va<-read.csv('/Users/askeller/Documents/Kellernet_PrelimAnalysis/RevisionAnalyses_PFNsCog/SplitHalfReliability/SingleParcel_1by1_SH/finalV_csvs/sub7_Va.csv',header=FALSE)
+sub7_Vb<-read.csv('/Users/askeller/Documents/Kellernet_PrelimAnalysis/RevisionAnalyses_PFNsCog/SplitHalfReliability/SingleParcel_1by1_SH/finalV_csvs/sub7_Vb.csv',header=FALSE)
+sub8_Va<-read.csv('/Users/askeller/Documents/Kellernet_PrelimAnalysis/RevisionAnalyses_PFNsCog/SplitHalfReliability/SingleParcel_1by1_SH/finalV_csvs/sub8_Va.csv',header=FALSE)
+sub8_Vb<-read.csv('/Users/askeller/Documents/Kellernet_PrelimAnalysis/RevisionAnalyses_PFNsCog/SplitHalfReliability/SingleParcel_1by1_SH/finalV_csvs/sub8_Vb.csv',header=FALSE)
+sub9_Va<-read.csv('/Users/askeller/Documents/Kellernet_PrelimAnalysis/RevisionAnalyses_PFNsCog/SplitHalfReliability/SingleParcel_1by1_SH/finalV_csvs/sub9_Va.csv',header=FALSE)
+sub9_Vb<-read.csv('/Users/askeller/Documents/Kellernet_PrelimAnalysis/RevisionAnalyses_PFNsCog/SplitHalfReliability/SingleParcel_1by1_SH/finalV_csvs/sub9_Vb.csv',header=FALSE)
+sub10_Va<-read.csv('/Users/askeller/Documents/Kellernet_PrelimAnalysis/RevisionAnalyses_PFNsCog/SplitHalfReliability/SingleParcel_1by1_SH/finalV_csvs/sub10_Va.csv',header=FALSE)
+sub10_Vb<-read.csv('/Users/askeller/Documents/Kellernet_PrelimAnalysis/RevisionAnalyses_PFNsCog/SplitHalfReliability/SingleParcel_1by1_SH/finalV_csvs/sub10_Vb.csv',header=FALSE)
+```
+
+
+
+# Compute ICC
+```{r}
+ICC_results <- c()
+
+for (sub in 1:10){
+  ICCs_sub <- c()
+  
+  if (sub == 1){
+    Va <- sub1_Va
+    Vb <- sub1_Vb
+  } else if (sub == 2){
+      Va <- sub2_Va
+      Vb <- sub2_Vb
+  } else if (sub == 3){
+      Va <- sub3_Va
+      Vb <- sub3_Vb
+  } else if (sub == 4){
+      Va <- sub4_Va
+      Vb <- sub4_Vb 
+  } else if (sub == 5){
+      Va <- sub5_Va
+      Vb <- sub5_Vb 
+  } else if (sub == 6){
+      Va <- sub6_Va
+      Vb <- sub6_Vb 
+  } else if (sub == 7){
+      Va <- sub7_Va
+      Vb <- sub7_Vb 
+  } else if (sub == 8){
+      Va <- sub8_Va
+      Vb <- sub8_Vb 
+  } else if (sub == 9){
+      Va <- sub9_Va
+      Vb <- sub9_Vb 
+  } else if (sub == 10){
+      Va <- sub10_Va
+      Vb <- sub10_Vb 
+    }
+
+  
+  for (network in 1:17){
+    result<-ICC(data.frame(Va[,network],Vb[,network]))$results$ICC[2]
+    ICCs_sub <- c(ICCs_sub,result)
+  }
+  ICC_results <- rbind(ICC_results,ICCs_sub)
+}
+
+
+# Save results (the above step takes a while to run)
+write.csv(ICC_results,'/Users/askeller/Documents/Kellernet_PrelimAnalysis/RevisionAnalyses_PFNsCog/SplitHalfReliability/ICCresults_10subj_17PFNs.csv')
+```
+
+# Just load it in
+```{r}
+ICC_results<-read.csv('/Users/askeller/Documents/Kellernet_PrelimAnalysis/RevisionAnalyses_PFNsCog/SplitHalfReliability/ICCresults_10subj_17PFNs.csv')
+```
+
+# Plot results
+
+```{r}
+ICC_results_df <- data.frame(ICC_results)
+colnames(ICC_results_df)<-c("Default Mode (1)","Somatomotor (2)","Fronto-Parietal (3)","Somatomotor (4)","Dorsal Attention (5)","Visual (6)","Ventral Attention (7)","Default Mode (8)","Ventral Attention (9)","Visual (10)","Somatomotor (11)","Default Mode (12)","Somatomotor (13)","Dorsal Attention (14)","Fronto-Parietal (15)","Auditory (16)","Fronto-Parietal (17)")
+
+ICC_results_melted<-melt(ICC_results_df)
+ICC_results_melted$subject<-rep(1:10,17)
+colnames(ICC_results_melted)<-c("PFN","ICC","Participant")
+
+ggplot(ICC_results_melted,aes(x=ICC))+geom_histogram()+theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank(),
+panel.background = element_blank(), axis.line = element_line(colour = "black"))
+
+ggplot(ICC_results_melted,aes(x=Participant,y=ICC))+geom_point()+scale_x_discrete(limits=c(1:10))+facet_wrap(~PFN)
+```
+# Make workbench file to create a brainmap of average ICC by network:
+```{r}
+PFNs_hardparcel<-read_cifti('/Users/askeller/Documents/Kellernet_PrelimAnalysis/hardparcel_group.dscalar.nii')
+map_ICC_lh <- PFNs_hardparcel$data$cortex_left
+map_ICC_rh <- PFNs_hardparcel$data$cortex_right
+
+for (PFN in 1:17) {
+    map_ICC_lh[map_ICC_lh==PFN,1]=mean(ICC_results[,PFN])
+    map_ICC_rh[map_ICC_rh==PFN,1]=mean(ICC_results[,PFN])
+}
+
+PFNs_hardparcel_ICC <- PFNs_hardparcel
+PFNs_hardparcel_ICC$data$cortex_left <- map_ICC_lh
+PFNs_hardparcel_ICC$data$cortex_right <- map_ICC_rh
+
+write_cifti(PFNs_hardparcel_ICC,'/Users/askeller/Documents/Kellernet_PrelimAnalysis/RevisionAnalyses_PFNsCog/SplitHalfReliability/PFNs_HardParcel_ICC')
+```
+
