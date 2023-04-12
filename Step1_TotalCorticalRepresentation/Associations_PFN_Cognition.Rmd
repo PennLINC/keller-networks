@@ -404,17 +404,6 @@ dev.off()
 
 
 
-# Look for effects of SES on total cortical representation
-```{r}
-ADI_mod1<-lmer(reshist_addr1_adi_income~interview_age+sex+(1|rel_family_id)+meanFD+PFN1+PFN2+PFN3+PFN4+PFN5+PFN6+PFN7+PFN8+PFN9+PFN10+PFN11+PFN12+PFN13+PFN14+PFN15+PFN16+PFN17,data=abcd.data.train.harmonized)
-ADI_mod2<-lmer(reshist_addr1_adi_income~interview_age+sex+(1|rel_family_id)+meanFD+PFN1+PFN2+PFN3+PFN4+PFN5+PFN6+PFN7+PFN8+PFN9+PFN10+PFN11+PFN12+PFN13+PFN14+PFN15+PFN16+PFN17,data=abcd.data.test.harmonized)
-
-tab_model(ADI_mod1,ADI_mod2,pred.labels = c("Intercept","Age","Sex","Motion","PFN1","PFN2","PFN3","PFN4","PFN5","PFN6","PFN7","PFN8","PFN9","PFN10","PFN11","PFN12","PFN13","PFN14","PFN15","PFN16","PFN17"),dv.labels=c("ADI (Discovery)","ADI (Replication)"),digits=2,digits.p=2,show.se=TRUE,show.stat=TRUE,string.stat = "t",string.se = "Std. Error",show.intercept=TRUE,show.ci = FALSE, p.adjust="bonferroni",p.style="scientific", file = "/Users/askeller/Documents/Kellernet_PrelimAnalysis/RevisionAnalyses_PFNsCog/SES/ADI_by_PFN.doc")
-```
-
-
-
-
 ### Bar plot (Discovery Sample):
 ```{r}
 pfn1<-summary(lmer(PFN1~interview_age+sex+(1|rel_family_id)+meanFD+thompson_PC1,data=abcd.data.train.harmonized))
