@@ -1,0 +1,194 @@
+---
+title: "SeparateSamplesCognitionPCA"
+output: html_document
+date: '2023-02-02'
+---
+
+# Load in libraries
+```{r}
+library(mvtnorm)
+library(tableone)
+library(parallel)
+library(rstan)
+library(loo)
+library(gamm4)
+library(Hmisc)
+library(FactoMineR)
+library(nFactors)
+library(reshape2)
+library(psych)
+library(data.table)
+library(mice)
+library(abind)
+library(cvTools)
+library(modEvA)
+```
+
+
+# Load data:
+```{r}
+nihtb<-read.table("/Users/askeller/Documents/Kellernet_PrelimAnalysis/RevisionAnalyses_PFNsCog/SeparateSamplesCognitionPCA/data/abcd_tbss01.txt",header=TRUE)
+lmt<-read.table("/Users/askeller/Documents/Kellernet_PrelimAnalysis/RevisionAnalyses_PFNsCog/SeparateSamplesCognitionPCA/data/lmtp201.txt",header=TRUE)
+ravlt<-read.table("/Users/askeller/Documents/Kellernet_PrelimAnalysis/RevisionAnalyses_PFNsCog/SeparateSamplesCognitionPCA/data/abcd_ps01.txt",header=TRUE)
+site_info <- readRDS("/Users/askeller/Documents/Kellernet_PrelimAnalysis/RevisionAnalyses_PFNsCog/SeparateSamplesCognitionPCA/data/DEAP-siteID.rds")
+colnames(site_info)[1]<-"subjectkey"
+matched_samples<-read_tsv("/Users/askeller/Documents/Kellernet_PrelimAnalysis/RevisionAnalyses_PFNsCog/SeparateSamplesCognitionPCA/data/participants.tsv")
+matched_samples.baseline<-matched_samples[matched_samples$session_id=="ses-baselineYear1Arm1",c("participant_id","matched_group")]
+colnames(matched_samples.baseline)[1]<-c("subjectkey")
+matched_samples.baseline$subjectkey <- gsub(pattern="sub-NDAR",replacement="NDAR_", matched_samples.baseline$subjectkey)
+matched_samples.baseline<-matched_samples.baseline %>% distinct()
+matched_samples.baseline<-matched_samples.baseline[!duplicated(matched_samples.baseline$subjectkey),] # remove duplicated subject
+data_for_ridge<-read.csv("/Users/askeller/Documents/Kellernet_PrelimAnalysis/RevisionAnalyses_PFNsCog/SeparateSamplesCognitionPCA/data/data_for_ridge_032822_subIDwithNDAR.csv")
+data_for_ridge<-data_for_ridge[!duplicated(data_for_ridge$subjectkey),]
+subj_to_include<-data.frame(data_for_ridge[,"subjectkey"])
+colnames(subj_to_include)[1]<-"subjectkey"
+```
+
+
+
+# Convert factors to numeric values
+```{r}
+nihtb$nihtbx_flanker_uncorrected <- as.numeric(nihtb$nihtbx_flanker_uncorrected)
+nihtb$nihtbx_picvocab_uncorrected <- as.numeric(nihtb$nihtbx_picvocab_uncorrected)
+nihtb$nihtbx_pattern_uncorrected <- as.numeric(nihtb$nihtbx_pattern_uncorrected)
+nihtb$nihtbx_picture_uncorrected <- as.numeric(nihtb$nihtbx_picture_uncorrected)
+nihtb$nihtbx_reading_uncorrected <- as.numeric(nihtb$nihtbx_reading_uncorrected)
+nihtb$nihtbx_list_uncorrected <- as.numeric(nihtb$nihtbx_list_uncorrected)
+nihtb$nihtbx_cardsort_uncorrected <- as.numeric(nihtb$nihtbx_cardsort_uncorrected)
+lmt$lmt_scr_perc_correct <- as.numeric(lmt$lmt_scr_perc_correct)
+ravlt$pea_ravlt_sd_trial_i_tc <- as.numeric(ravlt$pea_ravlt_sd_trial_i_tc)
+ravlt$pea_ravlt_sd_trial_ii_tc <- as.numeric(ravlt$pea_ravlt_sd_trial_ii_tc)
+ravlt$pea_ravlt_sd_trial_iii_tc <- as.numeric(ravlt$pea_ravlt_sd_trial_iii_tc)
+ravlt$pea_ravlt_sd_trial_iv_tc <- as.numeric(ravlt$pea_ravlt_sd_trial_iv_tc)
+ravlt$pea_ravlt_sd_trial_v_tc <- as.numeric(ravlt$pea_ravlt_sd_trial_v_tc)
+```
+
+
+
+# Extract necessary cognition columns for just the baseline data
+```{r}
+nihtb_keep <- nihtb[nihtb$eventname=="baseline_year_1_arm_1",c("subjectkey","nihtbx_picvocab_uncorrected","nihtbx_flanker_uncorrected","nihtbx_pattern_uncorrected","nihtbx_reading_uncorrected","nihtbx_picture_uncorrected","nihtbx_list_uncorrected","nihtbx_cardsort_uncorrected")]
+lmt_keep <- lmt[lmt$eventname=="baseline_year_1_arm_1",c("subjectkey","lmt_scr_perc_correct")]
+ravlt_keep <- ravlt[ravlt$eventname=="baseline_year_1_arm_1",c("subjectkey","pea_ravlt_sd_trial_i_tc","pea_ravlt_sd_trial_ii_tc","pea_ravlt_sd_trial_iii_tc","pea_ravlt_sd_trial_iv_tc","pea_ravlt_sd_trial_v_tc")]
+```
+
+
+
+# for RAVLT we need to generate a summed score (code borrowed from Thompson et al. 2019):
+```{r}
+ind_pea_ravlt = c(which(names(ravlt_keep)=="pea_ravlt_sd_trial_i_tc"),which(names(ravlt_keep)=="pea_ravlt_sd_trial_ii_tc"),
+                  which(names(ravlt_keep)=="pea_ravlt_sd_trial_iii_tc"),which(names(ravlt_keep)=="pea_ravlt_sd_trial_iv_tc"),
+                  which(names(ravlt_keep)=="pea_ravlt_sd_trial_v_tc")); names(ravlt_keep)[ind_pea_ravlt]; summary(ravlt_keep[,ind_pea_ravlt])
+ravlt_keep$RAVLT <- apply(ravlt_keep[,ind_pea_ravlt],1,sum)
+```
+
+
+# Combine cognitive variables into a dataframe:
+```{r}
+merged_cognition1<-merge(nihtb_keep,lmt_keep,by="subjectkey")
+merged_cognition_final<-merge(merged_cognition1,ravlt_keep,by="subjectkey")
+```
+
+
+# Add in the family, site, and sample info:
+```{r}
+site_info_keep <- site_info[site_info$event_name=="baseline_year_1_arm_1",c("subjectkey","abcd_site","rel_family_id")]
+all_sample_info <- merge(site_info_keep,matched_samples.baseline,by="subjectkey")
+data_for_pca <- merge(all_sample_info,merged_cognition_final,by="subjectkey")
+```
+
+
+# Drop unneeded RAVLT columns, and rename all the columns
+```{r}
+data_for_pca_use <- data_for_pca[,c("subjectkey","abcd_site","rel_family_id","matched_group","nihtbx_picvocab_uncorrected","nihtbx_flanker_uncorrected","nihtbx_pattern_uncorrected","nihtbx_reading_uncorrected","nihtbx_picture_uncorrected","nihtbx_list_uncorrected","nihtbx_cardsort_uncorrected","lmt_scr_perc_correct","RAVLT")]
+colnames(data_for_pca_use)<-c("subjectkey","Site","Family","MatchedGroup","PicVocab","Flanker","Pattern","Reading","Picture","List","CardSort","LMT","RAVLT")
+data_for_pca_comp<-data_for_pca_use[complete.cases(data_for_pca_use),]
+```
+
+
+### IMPORTANT NOTE HERE: 3 participants who were included in the original n=6,972 do not have complete data and are therefore excluded from this analysis. Final sample will be n=6,969.
+
+
+# Reduce subject list to match the imaging sample for this paper
+```{r}
+data_for_pca_final<-merge(data_for_pca_comp,subj_to_include,by="subjectkey")
+```
+
+
+# Split the sample into Discovery and Replication
+```{r}
+data_for_pca_Disc <- data_for_pca_final[data_for_pca_final$MatchedGroup==1,]
+data_for_pca_Rep <- data_for_pca_final[data_for_pca_final$MatchedGroup==2,]
+```
+
+
+
+
+# Get indices for the cognitive variables, and check that they're correct
+```{r}
+ind_cog = c(which(names(data_for_pca_final)=="PicVocab"),which(names(data_for_pca_final)=="Flanker"),
+           which(names(data_for_pca_final)=="Pattern"),which(names(data_for_pca_final)=="Picture"),
+           which(names(data_for_pca_final)=="Reading"),which(names(data_for_pca_final)=="List"),
+           which(names(data_for_pca_final)=="CardSort"),which(names(data_for_pca_final)=="RAVLT"),
+           which(names(data_for_pca_final)=="LMT")); names(data_for_pca_final)[ind_cog]
+```
+
+
+# Run a simple PCA on the DISCOVERY dataset and REPLICATION dataset separately
+### ASK checked the initial version of this in the full sample on 11/18/22 and verified that the top 3 tasks loading onto the top 3 PC's are the same as for the Thompson et al. 2019 factor scores
+```{r}
+ind_Y = ind_cog; names(data_for_pca_Disc)[ind_Y]
+Y_Disc = as.matrix(scale(data_for_pca_Disc[complete.cases(data_for_pca_Disc[,c(ind_Y)]),ind_Y]))
+ev_Disc = eigen(cor(Y_Disc))
+ap_Disc = parallel(subject=nrow(Y_Disc),var=ncol(Y_Disc),rep=100,cent=.05)
+nS_Disc = nScree(x=ev_Disc$values,aparallel=ap_Disc$eigen$qevpea)
+plotnScree(nS_Disc)
+ncomp = 3
+y.pca.Disc = psych::principal(Y_Disc, rotate="varimax", nfactors=ncomp, scores=TRUE)
+y.pca.Disc$loadings
+
+ind_Y = ind_cog; names(data_for_pca_Rep)[ind_Y]
+Y_Rep = as.matrix(scale(data_for_pca_Rep[complete.cases(data_for_pca_Rep[,c(ind_Y)]),ind_Y]))
+ev_Rep = eigen(cor(Y_Rep))
+ap_Rep = parallel(subject=nrow(Y_Rep),var=ncol(Y_Rep),rep=100,cent=.05)
+nS_Rep = nScree(x=ev_Rep$values,aparallel=ap_Rep$eigen$qevpea)
+plotnScree(nS_Rep)
+ncomp = 3
+y.pca.Rep = psych::principal(Y_Rep, rotate="varimax", nfactors=ncomp, scores=TRUE)
+y.pca.Rep$loadings
+```
+
+# Save out the scores for each PC
+```{r}
+data_for_pca_Disc$SepSampPC1<-y.pca.Disc$scores[,1]
+data_for_pca_Disc$SepSampPC2<-y.pca.Disc$scores[,2]
+data_for_pca_Disc$SepSampPC3<-y.pca.Disc$scores[,3]
+
+data_for_pca_Rep$SepSampPC1<-y.pca.Rep$scores[,1]
+data_for_pca_Rep$SepSampPC2<-y.pca.Rep$scores[,2]
+data_for_pca_Rep$SepSampPC3<-y.pca.Rep$scores[,3]
+
+pca_input_and_results <- rbind(data_for_pca_Disc,data_for_pca_Rep)
+pca_results <- pca_input_and_results[,c("subjectkey","SepSampPC1","SepSampPC2","SepSampPC3")]
+data_for_ridge_6969<-merge(data_for_ridge,pca_results,by="subjectkey")
+```
+
+
+# Check the correlations between the Thompson scores and the separate sample PCA scores
+### correlations are 0.970, 0.985 and 0.975 respectively
+```{r}
+cor.test(data_for_ridge_6969$thompson_PC1,data_for_ridge_6969$SepSampPC1)
+cor.test(data_for_ridge_6969$thompson_PC2,data_for_ridge_6969$SepSampPC2)
+cor.test(data_for_ridge_6969$thompson_PC3,data_for_ridge_6969$SepSampPC3)
+```
+
+
+# Create a data for ridge file that can be used to run ridge regressions using these new PC scores instead of the Thompson scores as a sensitivity analysis
+```{r}
+data_for_ridge_SepSampPCA<-data_for_ridge_6969[,c("subjectkey","SepSampPC1","SepSampPC2","SepSampPC3","matched_group","interview_age","sex","meanFD","abcd_site","rel_family_id")]
+data_for_ridge_SepSampPCA$subjectkey<-gsub(pattern="NDAR_INV",replacement="INV", data_for_ridge_SepSampPCA$subjectkey)
+write.csv(data_for_ridge_SepSampPCA,"/Users/askeller/Documents/Kellernet_PrelimAnalysis/RevisionAnalyses_PFNsCog/SeparateSamplesCognitionPCA/data_for_ridge_SepSampPCA.csv")
+
+```
+
+
