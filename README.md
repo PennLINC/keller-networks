@@ -81,13 +81,19 @@ The Rmarkdown file Cui2020Rep_SumWeightsBarPlots.Rmd walks through the plotting 
 All code for sensitivity analyses can be found in "Step6_SensitivityAnalyses"
 
 ### Individual Task: 
-Trains ridge regression models on PFN topography to predict performance on individual cognitive tasks. The workflow is exactly the same as section 2.1 (get_data_for_ridge_IndTask.R to prepare the data for the ridge regressions), section 2.2 (perform ridge regresison using submit_all_IndTask.py which will call keller_proc_predict_IndTask.py which will call preprocess_IndTask.py), and section 3.1 (compare_predicted_actual_IndTask.m to see the results).
+The goal of this analysis is to see how well our ridge regression models trained on the multivariate pattern of PFN topography predict cognitive perofrmance in individual tasks (rather than broad cognitive domains derived from dimensionality reduction). This code will therefore train ridge regression models on PFN topography to predict performance on individual cognitive tasks. The workflow is exactly the same as section 2.1 (get_data_for_ridge_IndTask.R to prepare the data for the ridge regressions), section 2.2 (perform ridge regresison using submit_all_IndTask.py which will call keller_proc_predict_IndTask.py which will call preprocess_IndTask.py), and section 3.1 (compare_predicted_actual_IndTask.m to see the results). 
 
 ### Separate Samples PCA: 
-Trains ridge regression models on PFN topography to predict cognitive PCA scores derived seprately in the discovery and replicaiton samples. Note that "Step3_RidgeRegressionPlotting/compare_predicted_actual_matchedsamples.m" contains code to visualize these results. 
+The goal of this analysis is to confirm that our ridge regression models trianed on the multivariate pattern of PFN topography can still predict cognition across the three broad domains when the cognitive PCA scores are derived separately in the discovery and replicaiton samples. Again, the workflow is very similar to those used above:
+1. Use SeparateSamplesCognitionPCA.Rmd to derive the cognitive PCA scores separately in the discovery and replication samples. This will create a data_for_ridge file that will be used for the ridge regression models.
+2. Use submit_all_SepSampPCA.py to run the ridge regression on the matched samples in the same manner as above (this will call keller_proc_predict_SepSampPCA.py which will call preprocess_SepSampPCA.py)
+3. To run these same ridge regressions on individual PFNs rather than all PFNs together, use submit_SepSampPCA.py
+4. To get null distributions (like in section 2.2 above), run submit_all_SepSampPCA_null.py which will call keller_proc_predict_SepSampPCA_null.py
+5. To visualize the results for the model trained on all PFNs, use /Step3_RidgeRegressionPlotting/compare_predicted_actual_matchedsamples.m
+6. To visualize the results for each individual PFN, use SepSamp_pred_acc_by_PFN.m followed by SepSamp_pred_acc_by_PFN_workbench.R.
 
 ### SES: 
-Trains two ridge regression models: the first is trained only on areal deprivation index and the second is trained on both areal deprivation index and PFN topography
+The goal of this analysis is to train two ridge regression models: the first is trained only on areal deprivation index and the second is trained on both areal deprivation index and PFN topography together. 
 
 ### Resting State Only: 
 Performs ridge regression analyses and univariate association analyses using only the data from resting-state scans
