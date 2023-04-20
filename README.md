@@ -78,6 +78,7 @@ The Rmarkdown file Cui2020Rep_SumWeightsBarPlots.Rmd walks through the plotting 
 
 
 ## Step 6: Sensitivity Analyses
+### All code for sensitivity analyses can be found in "/Step6_SensitivityAnalyses"
 
 ### Individual Task: 
 Trains ridge regression models on PFN topography to predict performance on individual cognitive tasks.
