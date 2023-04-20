@@ -78,10 +78,10 @@ The Rmarkdown file Cui2020Rep_SumWeightsBarPlots.Rmd walks through the plotting 
 
 
 ## Step 6: Sensitivity Analyses
-### All code for sensitivity analyses can be found in "/Step6_SensitivityAnalyses"
+All code for sensitivity analyses can be found in "Step6_SensitivityAnalyses"
 
 ### Individual Task: 
-Trains ridge regression models on PFN topography to predict performance on individual cognitive tasks.
+Trains ridge regression models on PFN topography to predict performance on individual cognitive tasks. The workflow is exactly the same as section 2.1 (get_data_for_ridge_IndTask.R to prepare the data for the ridge regressions), section 2.2 (perform ridge regresison using submit_all_IndTask.py which will call keller_proc_predict_IndTask.py which will call preprocess_IndTask.py), and section 3.1 (compare_predicted_actual_IndTask.m to see the results).
 
 ### Separate Samples PCA: 
 Trains ridge regression models on PFN topography to predict cognitive PCA scores derived seprately in the discovery and replicaiton samples. Note that "Step3_RidgeRegressionPlotting/compare_predicted_actual_matchedsamples.m" contains code to visualize these results. 
