@@ -133,7 +133,7 @@ dat <- t(abcd.data.train.toharmonize)
 abcd.data.combat <- neuroCombat(dat=dat,mod=mod,batch=batch,eb=FALSE)
 dat.harmonized<-data.frame(t(abcd.data.combat$dat.combat))
 abcd.data.noPFNsCog <- subset(abcd.data.train,select=-c(PFN1,PFN2,PFN3,PFN4,PFN5,PFN6,PFN7,PFN8,PFN9,PFN10,PFN11,PFN12,PFN13,PFN14,PFN15,PFN16,PFN17,thompson_PC1,thompson_PC2,thompson_PC3,meanFD))
-abcd.data.train.harmonized <- cbind(abcd.data.noPFNsCog,dat.harmonized) # Add the harmonized data back into the main dataframe (BE AWARE THAT NOT ALL DATA IS HARMONIZED)
+abcd.data.train.harmonized <- cbind(abcd.data.noPFNsCog,dat.harmonized) # Add the harmonized data back into the main dataframe
 
 # harmonize TEST set 
 batch <- abcd.data.test$abcd_site
