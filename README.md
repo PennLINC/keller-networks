@@ -110,7 +110,8 @@ A single Rmd file (PFN_Size_By_PredAcc.Rmd) is used to compare the size of each 
 
 ### Split Half Reliability: 
 Computes the split-half reliability of PFN topography in a subset of participants
-
+1. Use the splithalf_reliability.m file first. This script will load in the PFN loadings for each of 10 participants from ABCD who had a sufficient duration of low-motion high-quality resting-state data exceeding 20 minutes. We first computed PFNs in each 10-minute half of the data using the approach described in the current manuscript. This script will load in those PFN loadings for each half of the data and save them out in a format that can then be used to compute split half reliability.
+2. Next, use splithalf_ICCs.Rmd to compute the intra-class correlation coefficients as a measure of split-half reliability. This file will load in the csvs that are saved out from splithalf_reliability.m and compute the ICCs. This file will also plot the results and make a workbench file that can be used to visualize brainmaps of average ICC by network. 
 
 ### Psychotropic Medication Use: 
 Sensitivity analyses controlling for psychotropic medication use can be found in "/Step1_TotalCorticalRepresentation/Associations_PFN_Cognition.Rmd"
