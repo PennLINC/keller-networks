@@ -96,16 +96,21 @@ The goal of this analysis is to confirm that our ridge regression models trianed
 The goal of this analysis is to train two ridge regression models: the first is trained only on areal deprivation index (ADI) and the second is trained on both areal deprivation index and PFN topography together. 
 1. Use get_SES_features.R to get data files with the ADI measure per participant
 2. Use submit_all_SES.py to run the models trained only on ADI (this will call keller_proc_predict_SES.py which will call preprocess_SES.py and predict_matchedsamples_SES.py)
-3. Use submit_all_SES_PFNs.py to run the models trained on both ADI and PFN topography (this will call keller_proc_predict_SES_PFNs.py which will call preprocess_SES_PFNs.py 
+3. Use submit_all_SES_PFNs.py to run the models trained on both ADI and PFN topography (this will call keller_proc_predict_SES_PFNs.py which will call preprocess_SES_PFNs.py and predict_matchedsamples_SES_PFNs.py). 
+4. Visualize results with compare_predicted_actual_matchedsamples_SES.m
 
 ### Resting State Only: 
-Performs ridge regression analyses and univariate association analyses using only the data from resting-state scans
+The goal of this analysis is to perform ridge regression analyses and univariate association analyses using only the data from resting-state scans rather than the concatenated time series containing both resting-state and task scans. 
+1. The Associations_PFN_Cognition_Rest.Rmd file will perform the univariate association analyses in the same manner as Section 1.2 above. 
+2. Use the file get_data_for_ridge_restOnlyPFNs.R to get the data file as input to the ridge regression. The same code as used for the original matched samples ridge regression (section 2.2 above) can be used to run the ridge regression with this new input data. 
+3. Use compare_predicted_actual_rest.m to visualize the results. 
 
 ### Size By Pred Acc: 
-Compares the size of each PFN to prediction accuracy
+A single Rmd file (PFN_Size_By_PredAcc.Rmd) is used to compare the size of each PFN to prediction accuracy. We get the total size of each PFN from the hard parcellation and then plot prediction accuracy by PFN size. This code is also used to compare PFN size to S-A axis rank.
 
 ### Split Half Reliability: 
 Computes the split-half reliability of PFN topography in a subset of participants
+
 
 ### Psychotropic Medication Use: 
 Sensitivity analyses controlling for psychotropic medication use can be found in "/Step1_TotalCorticalRepresentation/Associations_PFN_Cognition.Rmd"
