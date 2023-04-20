@@ -264,21 +264,25 @@ confint(lmer(PFN17~interview_age+sex+(1|rel_family_id)+meanFD+thompson_PC1,data=
 abcd.data.for.ridge<-abcd.data.traintest[,c("subjectkey","thompson_PC1","thompson_PC2","thompson_PC3","matched_group","interview_age","sex","meanFD","abcd_site","rel_family_id")]
 abcd.data.traintest<-abcd.data.traintest[complete.cases(abcd.data.for.ridge),]
 
+# load in CBCL data for internalizing, externalizing, and problem behavior symptoms
 cbcl<-read.table("/Users/askeller/Documents/Kellernet_PrelimAnalysis/aseba/abcd_cbcls01.txt",header=TRUE)
 cbcl_baseline <- cbcl[cbcl$eventname=="baseline_year_1_arm_1",c("subjectkey","cbcl_scr_syn_internal_r","cbcl_scr_syn_external_r","cbcl_scr_syn_totprob_r")]
 cbcl_baseline$cbcl_scr_syn_internal_r <- as.numeric(cbcl_baseline$cbcl_scr_syn_internal_r)
 cbcl_baseline$cbcl_scr_syn_external_r <- as.numeric(cbcl_baseline$cbcl_scr_syn_external_r)
 cbcl_baseline$cbcl_scr_syn_totprob_r <- as.numeric(cbcl_baseline$cbcl_scr_syn_totprob_r)
 
+# load in psychotropic medication data (assessed by the Medication Inventory from the PhenX instrument and coded according to Shoval et al., 2021)
 psychMed<-read.csv("/Users/askeller/Documents/Kellernet_PrelimAnalysis/RevisionAnalyses_PFNsCog/PsychotropicMeds/ABCD_Psychotropic_Medications.csv")
 psychMed_baseline <- psychMed[psychMed$eventname=="baseline_year_1_arm_1",c("subjectkey","ADHD_meds","Antidepressant_meds","Antipsychotic_meds")]
 psychMed_baseline$ADHD_meds<-as.factor(psychMed_baseline$ADHD_meds)
 psychMed_baseline$Antipsychotic_meds<-as.factor(psychMed_baseline$Antipsychotic_meds)
 psychMed_baseline$Antidepressant_meds<-as.factor(psychMed_baseline$Antidepressant_meds)
 
+# merge dataframes
 abcd.data.traintest<-merge(abcd.data.traintest,cbcl_baseline,by="subjectkey")
 abcd.data.traintest<-merge(abcd.data.traintest,psychMed_baseline,by="subjectkey")
 
+# code medication use as a factor
 abcd.data.traintest$ADHD_meds<-factor(abcd.data.traintest$ADHD_meds, levels = c("1","0"))
 abcd.data.traintest$Antidepressant_meds<-factor(abcd.data.traintest$Antidepressant_meds, levels = c("1","0"))
 abcd.data.traintest$Antipsychotic_meds<-factor(abcd.data.traintest$Antipsychotic_meds, levels = c("1","0"))
@@ -534,6 +538,7 @@ ggsave('/Users/askeller/Documents/Kellernet_PrelimAnalysis/CuiRep_032322/Network
 
 # Test whether results hold with covariates for psychotropic med use:
 ```{r}
+# merge data frames
 abcd.data.train.harmonized.withMeds <- merge(abcd.data.train.harmonized,abcd.data.traintest[,c("subjectkey", setdiff(colnames(abcd.data.traintest),colnames(abcd.data.train.harmonized)))],by="subjectkey")
 abcd.data.test.harmonized.withMeds <- merge(abcd.data.test.harmonized,abcd.data.traintest[,c("subjectkey", setdiff(colnames(abcd.data.traintest),colnames(abcd.data.test.harmonized)))],by="subjectkey")
 
