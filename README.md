@@ -93,7 +93,10 @@ The goal of this analysis is to confirm that our ridge regression models trianed
 6. To visualize the results for each individual PFN, use SepSamp_pred_acc_by_PFN.m followed by SepSamp_pred_acc_by_PFN_workbench.R.
 
 ### SES: 
-The goal of this analysis is to train two ridge regression models: the first is trained only on areal deprivation index and the second is trained on both areal deprivation index and PFN topography together. 
+The goal of this analysis is to train two ridge regression models: the first is trained only on areal deprivation index (ADI) and the second is trained on both areal deprivation index and PFN topography together. 
+1. Use get_SES_features.R to get data files with the ADI measure per participant
+2. Use submit_all_SES.py to run the models trained only on ADI (this will call keller_proc_predict_SES.py which will call preprocess_SES.py and predict_matchedsamples_SES.py)
+3. Use submit_all_SES_PFNs.py to run the models trained on both ADI and PFN topography (this will call keller_proc_predict_SES_PFNs.py which will call preprocess_SES_PFNs.py 
 
 ### Resting State Only: 
 Performs ridge regression analyses and univariate association analyses using only the data from resting-state scans
