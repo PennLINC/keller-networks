@@ -12,7 +12,7 @@ cog_vars = {'PicVocab','Flanker','Pattern','Reading','Picture','List','CardSort'
 % Specify results folder and data_for_ridge file location
 folder_name='/Users/askeller/Documents/Kellernet_PrelimAnalysis/RevisionAnalyses_PFNsCog/IndTask/results/all_network/';
 data_for_ridge=xlsread('/Users/askeller/Documents/Kellernet_PrelimAnalysis/Keller_PFNsCognition_Codebase_Revision/Step6_SensitivityAnalyses/IndTask/data_for_ridge_IndTask.xls');
-% note: column order is this "PicVocab","Flanker","Pattern","Reading","Picture","LMT","RAVLT","matched_group","interview_age","sex","meanFD","abcd_site","rel_family_id"
+% note: column order is this "PicVocab","Flanker","Pattern","Reading","Picture","List","CardSort","LMT","RAVLT","matched_group","interview_age","sex","meanFD","abcd_site","rel_family_id"
 
 % Loop through each outcome variable
 for cog = 1:length(cog_vars)
