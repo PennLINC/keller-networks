@@ -86,6 +86,7 @@ acc_PC3_boot_null = readNPY([folder_name '/' file_name_acc_PC3_boot_null]);
 
 
 %% Plotting
+% Note that "polyfit" with the third input variable set to 1 provides a linear fit to the data.
 
 % load colors
 color_fill = gray(10);
