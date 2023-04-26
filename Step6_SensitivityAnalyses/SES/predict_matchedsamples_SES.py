@@ -37,7 +37,7 @@ phenotypes_control = pd.read_csv(control_path)
 """
 load in all the feature weights
 """
-features = np.load(feature_path)
+features = np.load(feature_path).reshape(-1, 1)
 """
 this is adapted from pennlinckit.utils.predict
 """
