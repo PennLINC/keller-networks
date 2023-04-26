@@ -19,4 +19,4 @@ control_path = '/{0}/phenotypes_control.csv'.format(tmpdir)
 """
 this does the actual ridge regression
 """
-os.system('python /{0}/predict_matchedsamples.py {1} {2} {3} {4} {5} rel_family_id'.format(homedir,working_dir,feature_path,phenotype_path,phenotype_name,control_path))
+os.system('python /{0}/predict_matchedsamples_SES_PFNs.py {1} {2} {3} {4} {5} rel_family_id'.format(homedir,working_dir,feature_path,phenotype_path,phenotype_name,control_path))
