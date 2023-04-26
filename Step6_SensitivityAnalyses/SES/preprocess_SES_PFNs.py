@@ -49,15 +49,13 @@ for subject in phenotypes.subjectkey.values:
     if type(network) == int:
         f = f[network]
     features.append(f)
-
+features = np.array(features)
+features = features.reshape(features.shape[0],-1) #subject by flat array shape to be flat for sklearn
 SESfeatures = pd.read_csv('/gpfs/fs001/cbica/projects/abcdfnets/SES_features.csv') #load
 SESfeaturesOrdered=SESfeatures[SESfeatures.subjectkey==phenotypes.subjectkey.values]['reshist_addr1_adi_income']
-features.append(SESfeaturesOrdered)
+features=np.column_stack((features,SESfeaturesOrdered))
 
-features=np.array(features)
-features = features.reshape(features.shape[0],-1) #subject by flat array shape to be flat for sklearn
-
-np.save('/{0}/features_{1}.npy'.format(outdir,network),features.astype(np.float16))
+np.save('/{0}/features_{1}.npy'.format(outdir,network),features)
 
 
 
