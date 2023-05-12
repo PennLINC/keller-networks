@@ -106,7 +106,7 @@ The goal of this analysis is to perform ridge regression analyses and univariate
 3. Use compare_predicted_actual_rest.m to visualize the results. 
 
 ### Size By Pred Acc: 
-A single Rmd file (PFN_Size_By_PredAcc.Rmd) is used to compare the size of each PFN to prediction accuracy. We get the total size of each PFN from the hard parcellation and then plot prediction accuracy by PFN size. This code is also used to compare PFN size to S-A axis rank.
+A single Rmd file (PFN_Size_By_PredAcc.Rmd) is used to compare the size of each PFN to prediction accuracy. We get the total size of each PFN from the hard parcellation and then plot prediction accuracy by PFN size. This code is also used to compare PFN size to S-A axis rank. Note that the prediction accuracy by PFN .mat file that is taken as input to this Rmd comes from Step3_RidgeResultsPlotting/pred_acc_by_PFN.m.
 
 ### Split Half Reliability: 
 Computes the split-half reliability of PFN topography in a subset of participants
