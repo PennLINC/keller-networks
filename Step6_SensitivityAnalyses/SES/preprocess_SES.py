@@ -43,7 +43,7 @@ load in all the feature weights
 
 features = []
 SESfeatures = pd.read_csv('/gpfs/fs001/cbica/projects/abcdfnets/SES_features.csv') #load
-SESfeaturesOrdered=SESfeatures[SESfeatures.subjectkey==phenotypes.subjectkey.values]['reshist_addr1_adi_income']
+SESfeaturesOrdered=SESfeatures[SESfeatures.subjectkey==phenotypes.subjectkey.values]['reshist_addr1_adi_income'] # re-order the participant IDs to match across dataframes
 features=np.array(SESfeaturesOrdered)
 features = features.reshape(features.shape[0],-1) #subject by flat array shape to be flat for sklearn
 np.save('/{0}/features_{1}.npy'.format(outdir,network),features)
