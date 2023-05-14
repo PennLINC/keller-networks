@@ -92,7 +92,8 @@ for (sub in 1:10){
 
 
 # Save results (the above step takes a while to run)
-write.csv(ICC_results,'/Users/askeller/Documents/Kellernet_PrelimAnalysis/RevisionAnalyses_PFNsCog/SplitHalfReliability/ICCresults_10subj_17PFNs.csv')
+write.csv(ICC_results,'/Users/askeller/Documents/Kellernet_PrelimAnalysis/RevisionAnalyses_PFNsCog/SplitHalfReliability/ICCresults_10subj_17PFNs.csv') 
+## Note: remove first column of this csv (containing only strings of "ICCs_sub") before loading the results back in below
 ```
 
 # Just load it in
