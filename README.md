@@ -1,8 +1,12 @@
 # keller-networks
-This code is used to conduct analyses in ABCD data relating personalized functional network (PFN) functional topography to cognition, as a replication and extension of Cui et al. 2020.
-This pipeline will expect that PFNs have already been generated for each participant using NMF. Details and code to accomplish this are documented at https://github.com/ZaixuCui/pncSingleFuncParcel
+This is the codebase for the following study:
+Keller, A. S., Pines, A. R., Sydnor, V. J., Cui, Z., Bertolero, M. A., Barzilay, R., Alexander-Bloch, A. F., Byington, N., Chen, A., Conan, G. M., Davatzikos, C., Feczko, E., Hendrickson, T., Houghton, A., Larsen, B., Li, H., Miranda-Dominguez, O., Roalf, D. R., Perrone, A., Shanmugan, S., Shetty, A., Shinohara, R. T., Fan, Y., Fair, D. A*, & Satterthwaite, T. D.* (2023) Personalized functional brain network topography predicts individual differences in youth cognition. Accepted at Nature Communications.
 
-## Step 1: Associations between total cortical representation and general cognition (Figure 2)
+This code is used to conduct analyses in ABCD data relating personalized functional network (PFN) functional topography to cognition, as a replication and extension of Cui et al. 2020.
+
+This pipeline will expect that PFNs have already been generated for each participant using non-negative matrix factorization (NMF). Details and code to accomplish this are documented at https://github.com/ZaixuCui/pncSingleFuncParcel
+
+## Step 1: Associations between total cortical representation and general cognition
 
 ### 1.1	Calculate total cortical representation
 
